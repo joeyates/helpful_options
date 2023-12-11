@@ -1,69 +1,236 @@
 defmodule HelpfulOptions do
   @moduledoc """
-  A project-specific command-line option parser
+  The command-line option parser
   """
 
-  require Logger
-
-  @help_left_column_width 29
+  alias HelpfulOptions.{
+    Errors,
+    Logging,
+    Other,
+    OtherErrors,
+    Subcommands,
+    SubcommandErrors,
+    Switches,
+    SwitchErrors
+  }
 
   @doc ~S"""
-  Parses command arguments, returns an error if
+  Parses command-line arguments, returns an error if
   required arguments are not supplied and sets the logging level
 
-    iex> HelpfulOptions.run(["--foo", "hi"], switches: [foo: %{type: :string}])
-    {:ok, %{foo: "hi"}, []}
+  Arguments are assumed to come in up to 3 groups:
 
-    iex> HelpfulOptions.run(["-f", "hi"], switches: [foo: %{type: :string}], aliases: [f: :foo])
-    {:ok, %{foo: "hi"}, []}
+  * subcommands, as in `git remote add`,
+  * switches like `--format json`,
+  * other text.
 
-    iex> HelpfulOptions.run(["--bar", "hi"], switches: [foo: %{type: :string}])
-    {:error, "Unexpected parameters supplied: [\"--bar\"]"}
+  You can specify subcommands, switches and other text in the options.
 
-    iex> HelpfulOptions.run(["non-switch"], remaining: 1)
-    {:ok, %{}, ["non-switch"]}
+  ## Subcommands
 
-    iex> HelpfulOptions.run(["pizza"])
-    {:error, "You supplied unexpected non-switch arguments [\"pizza\"]"}
+  Subcommands are specified as a list of lists of strings:
 
-    iex> HelpfulOptions.run(["first", "second"], remaining: 2..3)
-    {:ok, %{}, ["first", "second"]}
+      iex> ["some", "subcommand"]
+      iex> |> HelpfulOptions.parse(subcommands: [~w(other), ~w(some subcommand)])
+      {:ok, ["some", "subcommand"], %{}, []}
 
-    iex> HelpfulOptions.run(["first"], remaining: 2)
-    {:error, "Supply 2 non-switch arguments"}
+  Unexpected subcommands are an error:
 
-    iex> HelpfulOptions.run(["first"], remaining: 2..3)
-    {:error, "Supply 2..3 non-switch arguments"}
+      iex> ["foo", "bar"]
+      iex> |> HelpfulOptions.parse(subcommands: [~w(other), ~w(some subcommand)])
+      {:error, %HelpfulOptions.Errors{subcommands: %HelpfulOptions.SubcommandErrors{unknown: ["foo", "bar"]}}}
 
-    iex> HelpfulOptions.help([foo: %{type: :boolean}])
-    "Options:\n  --foo                      Optional parameter"
+  Alternatively, you can specify `:any`:
 
-    iex> HelpfulOptions.help([foo: %{type: :string}])
-    "Options:\n  --foo=FOO                  Optional parameter"
+      iex> HelpfulOptions.parse(["any", "text"], subcommands: :any)
+      {:ok, ["any", "text"], %{}, []}
 
-    iex> HelpfulOptions.help([foo: %{type: :string, required: true}])
-    "Options:\n  --foo=FOO                  Required"
+  `help` is treated in a special way, if found, it sets the `help: true` key in the result:
 
-    iex> HelpfulOptions.help([foo: %{type: :boolean, description: "Frobnicate"}])
-    "Options:\n  --foo                      Frobnicate"
+      iex> HelpfulOptions.parse(["help"], [])
+      {:ok, [], %{help: true}, []}
 
-    iex> HelpfulOptions.help([foo: %{type: :string, description: "Frobnicate"}])
-    "Options:\n  --foo=FOO                  Frobnicate"
+  ## Switches
 
-    iex> HelpfulOptions.help([foo: %{type: :string, description: "Frobnicate", required: true}])
-    "Options:\n  --foo=FOO                  Frobnicate. Required"
+  Switches are specified as a list of atoms and maps:
+
+  The `:type` key is required.
+
+  There are to unary types:
+
+  * `:boolean` - a switch that is either present or absent
+  * `:count` - a switch that can be repeated, the value is the number of times it was repeated.
+
+  Example:
+
+      iex> ["--ok", "--plus", "--plus"]
+      iex> |> HelpfulOptions.parse(switches: [ok: %{type: :boolean}, plus: %{type: :count}])
+      {:ok, [], %{ok: true, plus: 2}, []}
+
+  There are three types which specify their argument type:
+
+  * `:float` - a switch that takes a floating-point value,
+  * `:integer` - a switch that takes an integer value,
+  * `:string` - a switch that takes a string value.
+
+  Example:
+
+      iex> ["--height", "2.54", "--minute", "59", "--foo", "hi"]
+      iex> |> HelpfulOptions.parse(switches: [
+      iex>   height: %{type: :float},
+      iex>   minute: %{type: :integer},
+      iex>   foo: %{type: :string}
+      iex> ])
+      {:ok, [], %{height: 2.54, minute: 59, foo: "hi"}, []}
+
+  There are 3 'collection' types, which take multiple values:
+
+  * `:strings` - the value is a list of strings,
+  * `:integers` - the value is a list of integers,
+  * `:floats` - the value is a list of floats.
+
+  Example:
+
+      iex> args = [
+      iex>   "--word", "hi", "--word", "there",
+      iex>   "--number", "42", "--number", "99",
+      iex>   "--height", "1.1", "--height", "2.2"
+      iex> ]
+      iex> HelpfulOptions.parse(args, switches: [
+      iex>   word: %{type: :strings},
+      iex>   number: %{type: :integers},
+      iex>   height: %{type: :floats}
+      iex> ])
+      {:ok, [], %{word: ["hi", "there"], number: [42, 99], height: [1.1, 2.2]}, []}
+
+  Switches that have not been specified are returned as an error:
+
+      iex> HelpfulOptions.parse(["--bar", "hi"], switches: [foo: %{type: :string}])
+      {:error, %HelpfulOptions.Errors{switches: %HelpfulOptions.SwitchErrors{unknown: ["--bar"]}}}
+
+  Switch parameters of the wrong type are returned as an error:
+
+      iex> HelpfulOptions.parse(["--bar", "hi"], switches: [bar: %{type: :float}])
+      {:error, %HelpfulOptions.Errors{switches: %HelpfulOptions.SwitchErrors{incorrect: [{"--bar", "hi"}]}}}
+
+  If you want to accept any supplied switches, use `:any`:
+
+      iex> HelpfulOptions.parse(["--param", "value"], switches: :any)
+      {:ok, [], %{param: "value"}, []}
+
+    Note: using `:any` will not work for switches that do not exist as atoms.
+    [HelpfulOptions will not create new atoms for you](https://hexdocs.pm/elixir/OptionParser.html#parse/2-parsing-unknown-switches).
+
+    You can specify a shortened name for a switch:
+
+      iex> HelpfulOptions.parse(["-f", "hi"], switches: [foo: %{type: :string, short: :f}])
+      {:ok, [], %{foo: "hi"}, []}
+
+    Aliases can be strings or atoms:
+
+      iex> ["--foo", "hi"]
+      iex> |> HelpfulOptions.parse(switches: [foo: %{type: :string, short: "f"}])
+      {:ok, [], %{foo: "hi"}, []}
+
+  Switches can have default values:
+
+      iex> HelpfulOptions.parse([], switches: [bar: %{type: :string, default: "Hello"}])
+      {:ok, [], %{bar: "Hello"}, []}
+
+  ## Default switches
+
+    `--help`, `--quiet` and `--verbose` are handled automatically.
+
+    `--help` can be supplied without any configuration:
+
+      iex> HelpfulOptions.parse(["--help"], [])
+      {:ok, [], %{help: true}, []}
+
+    `--quiet` and `--verbose` set the Logger level.
+    By default, it is set to `:info`, `--verbose` sets it to `:debug`,
+    while `:quiet` sets it to `:none`.
+
+      iex> HelpfulOptions.parse(["--quiet"], [])
+      {:ok, [], %{quiet: true}, []}
+
+  ## Other
+
+    The third group of command-line arguments is other text.
+
+    You can specify how many other parameters are required:
+
+      iex> HelpfulOptions.parse(["--", "first", "second"], other: 2)
+      {:ok, [], %{}, ["first", "second"]}
+
+    Note: to distinguish them from subcomands,
+    other parameters must be preceded by `--`, or by switches.
+
+    You can indicate limits with `:min` and/or `:max`:
+
+      iex> HelpfulOptions.parse(["--", "first", "second"], other: %{min: 2, max: 3})
+      {:ok, [], %{}, ["first", "second"]}
+
+    Alternatively, you can accept any number of other parameters with `:any`:
+
+      iex> HelpfulOptions.parse(["--", "first", "second"], other: :any)
+      {:ok, [], %{}, ["first", "second"]}
+
+    It's an error if you specify a count and the wrong number of other parameters is supplied:
+
+      iex> HelpfulOptions.parse(["--", "first"], other: 2)
+      {:error, %HelpfulOptions.Errors{other: %HelpfulOptions.OtherErrors{required: 2, actual: 1}}}
+
+    It's also an error if other parameters are supplied when none were specified:
+
+      iex> HelpfulOptions.parse(["--", "pizza"], [])
+      {:error, %HelpfulOptions.Errors{other: %HelpfulOptions.OtherErrors{unexpected: ["pizza"]}}}
+
+    Or, if they are outside the indicated range:
+
+      iex> HelpfulOptions.parse(["--", "first"], other: %{min: 2, max: 3})
+      {:error, %HelpfulOptions.Errors{other: %HelpfulOptions.OtherErrors{max: 3, min: 2, actual: 1}}}
+
+    Subcommands, switches and other parameters can, of course, be combined:
+
+      iex> ["subcommand", "--foo", "hi", "bar"]
+      iex> |> HelpfulOptions.parse(subcommands: [
+      iex>   ~w(subcommand)], switches: [foo: %{type: :string}], other: 1
+      iex> )
+      {:ok, ["subcommand"], %{foo: "hi"}, ["bar"]}
   """
-  def run(args, options \\ []) do
+
+  @type argv :: [String.t()]
+  @type options :: [subcommands: Subcommands.t(), switches: Switches.t(), other: Other.t()]
+  @spec parse(argv, Keyword.t()) :: {:ok, [String.t()], map, [String.t()]} | {:error, Errors.t()}
+  def parse(args, options) do
     with {:ok, opts} <- options_map(options),
-         {:ok, named, remaining} <- parse(args, opts),
-         {:ok} <- check_required(named, opts),
-         {:ok} <- check_remaining(remaining, opts),
-         {:ok} <- setup_logger(named),
-         {:ok, filtered} <- remove_logging(named) do
-      {:ok, filtered, remaining}
+         {:ok, subcommands, rest} <- Subcommands.parse(args, opts[:subcommands]),
+         {:ok, switches, other} <- Switches.parse(rest, opts[:switches]),
+         {:ok} <- Other.check(other, opts[:other]),
+         {:ok} <- Logging.apply(switches),
+         {:ok, subcommands, switches} <- move_help(subcommands, switches) do
+      {:ok, subcommands, switches, other}
     else
-      {:error, message} ->
-        {:error, message}
+      {:error, %SwitchErrors{} = errors} ->
+        {:error, %Errors{switches: errors}}
+
+      {:error, %SubcommandErrors{} = errors} ->
+        {:error, %Errors{subcommands: errors}}
+
+      {:error, %OtherErrors{} = errors} ->
+        {:error, %Errors{other: errors}}
+    end
+  end
+
+  defp move_help(subcommands, switches) do
+    if "help" in subcommands do
+      {
+        :ok,
+        Enum.filter(subcommands, &(&1 != "help")),
+        Map.put(switches, :help, true)
+      }
+    else
+      {:ok, subcommands, switches}
     end
   end
 
@@ -97,92 +264,4 @@ defmodule HelpfulOptions do
   end
 
   defp options_map(options), do: {:ok, Enum.into(options, %{})}
-
-  defp parse(args, opts) do
-    aliases = (opts[:aliases] || []) ++ [q: :quiet, v: :verbose]
-    switches = Keyword.merge((opts[:switches] || []), [quiet: %{type: :boolean}, verbose: %{type: :count}])
-    switches_keyword = switches_keyword(switches)
-
-    case OptionParser.parse(args, aliases: aliases, strict: switches_keyword) do
-      {named_list, remaining, []} ->
-        named = Enum.into(named_list, %{})
-        {:ok, named, remaining}
-      {_, _, invalid} ->
-        keys = Enum.map(invalid, fn {key, _value} -> key end)
-        {:error, "Unexpected parameters supplied: #{inspect(keys)}"}
-    end
-  end
-
-  defp switches_keyword(switches) do
-    Enum.map(switches, fn {name, %{type: type}} -> {name, type} end)
-  end
-
-  defp check_required(named, opts) do
-    missing =
-      (opts[:switches] || [])
-      |> Enum.map(fn
-          {name, %{required: true}} ->
-            if !Map.has_key?(named, name), do: name
-          _ ->
-            nil
-        end)
-      |> Enum.filter(&(&1))
-
-    if length(missing) == 0 do
-      {:ok}
-    else
-      {:error, "Please supply the following parameters: #{inspect(missing)}"}
-    end
-  end
-
-  defp check_remaining(remaining, %{remaining: %Range{} = range}) do
-    if length(remaining) in range do
-      {:ok}
-    else
-      {:error, "Supply #{inspect(range)} non-switch arguments"}
-    end
-  end
-
-  defp check_remaining(remaining, %{remaining: count})
-  when length(remaining) == count, do: {:ok}
-
-  defp check_remaining(_remaining, %{remaining: count}) do
-    {:error, "Supply #{count} non-switch arguments"}
-  end
-
-  defp check_remaining([], _options), do: {:ok}
-
-  defp check_remaining(remaining, _opts) do
-    {:error, "You supplied unexpected non-switch arguments #{inspect(remaining)}"}
-  end
-
-  defp setup_logger(named) do
-    verbose = Map.get(named, :verbose, 1)
-    quiet = Map.get(named, :quiet, false)
-
-    level = if quiet do
-      0
-    else
-      1 + verbose
-    end
-    level_atom =
-      case level do
-        0 -> :none
-        1 -> :info
-        _ -> :debug
-      end
-    Logger.configure([level: level_atom])
-    Logger.debug("Logger level set to #{level_atom}")
-
-    {:ok}
-  end
-
-  defp remove_logging(named) do
-    {
-      :ok,
-      named
-      |> Map.delete(:quiet)
-      |> Map.delete(:verbose)
-    }
-  end
 end
