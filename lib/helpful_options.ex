@@ -194,7 +194,7 @@ defmodule HelpfulOptions do
     end
   end
 
-  @spec help(options) :: String.t()
+  @spec help(options) :: {:ok, String.t()}
   @doc ~S"""
       iex> HelpfulOptions.help(switches: [foo: %{type: :string}])
       {
