@@ -194,6 +194,24 @@ defmodule HelpfulOptions do
     end
   end
 
+  @doc ~S"""
+      iex> HelpfulOptions.parse!(["--foo", "hi"], switches: [foo: %{type: :string}])
+      {%{foo: "hi"}, []}
+
+      iex> HelpfulOptions.parse!(["--bar", "hi"], switches: [foo: %{type: :string}])
+      ** (ArgumentError) --bar - unknown switch
+  """
+  @spec parse!(argv, options) :: {map, [String.t()]}
+  def parse!(argv, options) do
+    case parse(argv, options) do
+      {:ok, switches, other} ->
+        {switches, other}
+
+      {:error, errors} ->
+        raise ArgumentError, to_string(errors)
+    end
+  end
+
   @spec help(options) :: {:ok, String.t()}
   @doc ~S"""
       iex> HelpfulOptions.help(switches: [foo: %{type: :string}])
@@ -207,6 +225,19 @@ defmodule HelpfulOptions do
   """
   def help(options) do
     Switches.help(options[:switches])
+  end
+
+  @spec help!(options) :: String.t()
+  @doc ~S"""
+      iex> HelpfulOptions.help!(switches: [foo: %{type: :string}])
+      "-h, --help                     Show a help message\n" <>
+      "-q, --quiet                    Suppress output\n" <>
+      "-v, --verbose                  Increase verbosity\n" <>
+      "  --foo=FOO                    Optional parameter"
+  """
+  def help!(options) do
+    {:ok, help} = help(options)
+    help
   end
 
   defp options_map(options), do: {:ok, Enum.into(options, %{})}
