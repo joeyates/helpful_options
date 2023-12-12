@@ -4,9 +4,9 @@ defmodule HelpfulOptions.MixProject do
   def project do
     [
       app: :helpful_options,
-      version: "0.1.0",
-      elixir: "~> 1.15",
-      description: "A wrapper for the standard library's OptionParser",
+      version: "0.2.0",
+      elixir: "~> 1.14",
+      description: "A configurable command-line otptions parser",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package()
