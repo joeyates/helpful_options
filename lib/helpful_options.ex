@@ -128,7 +128,7 @@ defmodule HelpfulOptions do
 
   ## Other
 
-    The third group of command-line arguments is other text.
+    The second group of command-line arguments is other text.
 
     You can specify how many other parameters are required:
 
