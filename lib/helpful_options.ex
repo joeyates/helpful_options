@@ -40,6 +40,12 @@ defmodule HelpfulOptions do
       iex> |> HelpfulOptions.parse(switches: [ok: %{type: :boolean}, plus: %{type: :count}])
       {:ok, %{ok: true, plus: 2}, []}
 
+  Boolean switches can be negated with `--no-`:
+
+      iex> ["--no-ok"]
+      iex> |> HelpfulOptions.parse(switches: [ok: %{type: :boolean}])
+      {:ok, %{ok: false}, []}
+
   There are three types which specify their argument type:
 
   * `:float` - a switch that takes a floating-point value,
