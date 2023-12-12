@@ -1,70 +1,68 @@
 # HelpfulOptions
 
-A wrapper for the standard library's OptionParser.
+Processes command-line parameters.
 
-It adds
+Provides
 
-* an enriched parameter declaration,
+* rich parameter declaration,
 * formatted error messages,
 * automatic logging setup,
-* option summary output for `--help`
+* formatted paremeter descriptions for `--help`.
+
+It is intended for use with Mix tasks,
+Bakeware and other systems for creating Elixir
+command-line programs.
+
+# Approach
 
 This library assumes that the parameters that you want to process
-will be ordered as follows:
+are ordered as follows:
 
 ```sh
-YOUR_PROGRAM POSSIBLY SUBCOMMANDS --some dashed --arguments MAYBE OTHER STUFF
+SUBCOMMAND --switch PARAMETER OTHER
 ```
 
-For this reason, it returns 3 things:
+With each part being repeatable and optional.
 
-```
-{SUBCOMMANDS, OPTIONS, OTHER}
-```
-
-* SUBCOMMANDS - a List of Strings,
-* OPTIONS - a Map,
-* OTHER - a List of Strings.
-
-If you don't have subcommands or options
-and want to force everything into `OTHER`, use `--`:
+A Git example
 
 ```sh
-YOUR_PROGRAM -- OTHER STUFF
+git remote add -t feature -b main git@example.com:foo/bar
+    __________ __________________ _______________________
+        ^               ^                   ^
+        |               |                   |
+    subcommands      switches             other
 ```
+
+Subcommands, like Git's `remote` can be one or more words.
+You probably want to handle each subcommand with its own block of code,
+with its own switches.
+
+This libarary's main function is `HelpfulOptions.parse/2`:
+
+`parse/2` does **not** process subcommands.
+It assumes you have stripped them off.
+See `HelpfulOptions.Subcommands.strip/1`.
 
 # Usage
 
-Here are some example options:
-
 ```elixir
-  options = [
-    subcommands: [
-      ~w(foo),
-      ~w(foo bar)
-    ],
-    switches: [
-      foo: %{type: :string, required: true},
-      dry_run: %{type: :boolean},
-      bar: %{type: :string, required: true}
-    ]
-  ]
+@switches: [
+  foo: %{type: :string, required: true},
+  dry_run: %{type: :boolean},
+  bar: %{type: :string, required: true}
+]
+
+["-t", "feature", "-b", "main", "git@example.com:foo/bar"]
+|> HelpfulOptions.parse(args, switches: @switches, other: 1) do
+  {:ok, switches, [url]} ->
+    MyApp.add_remote(switches, url)
+    0
+  {:error, error} ->
+    IO.puts(:stderr, error)
+    1
+end
 ```
-
-All the keys are optional.
-
-## `subcommands`
-
-You can do one of two things:
-
-* use `subcommands: :any`
-* list all possible sequences (as in the example above).
-
-The library treats `help` as a subcommand in a special way:
-
-`help` doesn't need to be declared.
-If found, it is **not** returned in the subcommand List,
-instead, `%{help: true}` is returned as part of the options.
 
 ## `switches`
 
@@ -81,22 +79,6 @@ Three switches are added by the library:
     verbose: %{type: :count},
     quiet: %{type: :boolean}
   ]
-```
-
-Then parse your command-line arguments:
-
-```elixir
-  def run(args) do
-    case HelpfulOptions.run(args, switches: @switches) do
-      {:ok, subcommands, options, arguments} ->
-        ...
-        0
-      {:error, message} ->
-        IO.puts :stderr, message
-        1
-    end
-  end
-end
 ```
 
 See the doc tests in [lib/helpful_options.ex] for more examples.

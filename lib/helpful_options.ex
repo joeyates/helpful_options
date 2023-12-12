@@ -8,8 +8,6 @@ defmodule HelpfulOptions do
     Logging,
     Other,
     OtherErrors,
-    Subcommands,
-    SubcommandErrors,
     Switches,
     SwitchErrors
   }
@@ -18,37 +16,12 @@ defmodule HelpfulOptions do
   Parses command-line arguments, returns an error if
   required arguments are not supplied and sets the logging level
 
-  Arguments are assumed to come in up to 3 groups:
+  Arguments are assumed to come in 1 or 2 groups:
 
-  * subcommands, as in `git remote add`,
   * switches like `--format json`,
   * other text.
 
-  You can specify subcommands, switches and other text in the options.
-
-  ## Subcommands
-
-  Subcommands are specified as a list of lists of strings:
-
-      iex> ["some", "subcommand"]
-      iex> |> HelpfulOptions.parse(subcommands: [~w(other), ~w(some subcommand)])
-      {:ok, ["some", "subcommand"], %{}, []}
-
-  Unexpected subcommands are an error:
-
-      iex> ["foo", "bar"]
-      iex> |> HelpfulOptions.parse(subcommands: [~w(other), ~w(some subcommand)])
-      {:error, %HelpfulOptions.Errors{subcommands: %HelpfulOptions.SubcommandErrors{unknown: ["foo", "bar"]}}}
-
-  Alternatively, you can specify `:any`:
-
-      iex> HelpfulOptions.parse(["any", "text"], subcommands: :any)
-      {:ok, ["any", "text"], %{}, []}
-
-  `help` is treated in a special way, if found, it sets the `help: true` key in the result:
-
-      iex> HelpfulOptions.parse(["help"], [])
-      {:ok, [], %{help: true}, []}
+  In the options, you can specify which switches and other text are acceptable.
 
   ## Switches
 
@@ -65,7 +38,7 @@ defmodule HelpfulOptions do
 
       iex> ["--ok", "--plus", "--plus"]
       iex> |> HelpfulOptions.parse(switches: [ok: %{type: :boolean}, plus: %{type: :count}])
-      {:ok, [], %{ok: true, plus: 2}, []}
+      {:ok, %{ok: true, plus: 2}, []}
 
   There are three types which specify their argument type:
 
@@ -81,7 +54,7 @@ defmodule HelpfulOptions do
       iex>   minute: %{type: :integer},
       iex>   foo: %{type: :string}
       iex> ])
-      {:ok, [], %{height: 2.54, minute: 59, foo: "hi"}, []}
+      {:ok, %{height: 2.54, minute: 59, foo: "hi"}, []}
 
   There are 3 'collection' types, which take multiple values:
 
@@ -101,7 +74,7 @@ defmodule HelpfulOptions do
       iex>   number: %{type: :integers},
       iex>   height: %{type: :floats}
       iex> ])
-      {:ok, [], %{word: ["hi", "there"], number: [42, 99], height: [1.1, 2.2]}, []}
+      {:ok, %{word: ["hi", "there"], number: [42, 99], height: [1.1, 2.2]}, []}
 
   Switches that have not been specified are returned as an error:
 
@@ -116,7 +89,7 @@ defmodule HelpfulOptions do
   If you want to accept any supplied switches, use `:any`:
 
       iex> HelpfulOptions.parse(["--param", "value"], switches: :any)
-      {:ok, [], %{param: "value"}, []}
+      {:ok, %{param: "value"}, []}
 
     Note: using `:any` will not work for switches that do not exist as atoms.
     [HelpfulOptions will not create new atoms for you](https://hexdocs.pm/elixir/OptionParser.html#parse/2-parsing-unknown-switches).
@@ -124,18 +97,18 @@ defmodule HelpfulOptions do
     You can specify a shortened name for a switch:
 
       iex> HelpfulOptions.parse(["-f", "hi"], switches: [foo: %{type: :string, short: :f}])
-      {:ok, [], %{foo: "hi"}, []}
+      {:ok, %{foo: "hi"}, []}
 
     Aliases can be strings or atoms:
 
       iex> ["--foo", "hi"]
       iex> |> HelpfulOptions.parse(switches: [foo: %{type: :string, short: "f"}])
-      {:ok, [], %{foo: "hi"}, []}
+      {:ok, %{foo: "hi"}, []}
 
   Switches can have default values:
 
       iex> HelpfulOptions.parse([], switches: [bar: %{type: :string, default: "Hello"}])
-      {:ok, [], %{bar: "Hello"}, []}
+      {:ok, %{bar: "Hello"}, []}
 
   ## Default switches
 
@@ -144,14 +117,14 @@ defmodule HelpfulOptions do
     `--help` can be supplied without any configuration:
 
       iex> HelpfulOptions.parse(["--help"], [])
-      {:ok, [], %{help: true}, []}
+      {:ok, %{help: true}, []}
 
     `--quiet` and `--verbose` set the Logger level.
     By default, it is set to `:info`, `--verbose` sets it to `:debug`,
     while `:quiet` sets it to `:none`.
 
       iex> HelpfulOptions.parse(["--quiet"], [])
-      {:ok, [], %{quiet: true}, []}
+      {:ok, %{quiet: true}, []}
 
   ## Other
 
@@ -160,7 +133,7 @@ defmodule HelpfulOptions do
     You can specify how many other parameters are required:
 
       iex> HelpfulOptions.parse(["--", "first", "second"], other: 2)
-      {:ok, [], %{}, ["first", "second"]}
+      {:ok, %{}, ["first", "second"]}
 
     Note: to distinguish them from subcomands,
     other parameters must be preceded by `--`, or by switches.
@@ -168,12 +141,12 @@ defmodule HelpfulOptions do
     You can indicate limits with `:min` and/or `:max`:
 
       iex> HelpfulOptions.parse(["--", "first", "second"], other: %{min: 2, max: 3})
-      {:ok, [], %{}, ["first", "second"]}
+      {:ok, %{}, ["first", "second"]}
 
     Alternatively, you can accept any number of other parameters with `:any`:
 
       iex> HelpfulOptions.parse(["--", "first", "second"], other: :any)
-      {:ok, [], %{}, ["first", "second"]}
+      {:ok, %{}, ["first", "second"]}
 
     It's an error if you specify a count and the wrong number of other parameters is supplied:
 
@@ -190,47 +163,28 @@ defmodule HelpfulOptions do
       iex> HelpfulOptions.parse(["--", "first"], other: %{min: 2, max: 3})
       {:error, %HelpfulOptions.Errors{other: %HelpfulOptions.OtherErrors{max: 3, min: 2, actual: 1}}}
 
-    Subcommands, switches and other parameters can, of course, be combined:
+    Switches and other parameters can, of course, be combined:
 
-      iex> ["subcommand", "--foo", "hi", "bar"]
-      iex> |> HelpfulOptions.parse(subcommands: [
-      iex>   ~w(subcommand)], switches: [foo: %{type: :string}], other: 1
-      iex> )
-      {:ok, ["subcommand"], %{foo: "hi"}, ["bar"]}
+      iex> ["--foo", "hi", "bar"]
+      iex> |> HelpfulOptions.parse(switches: [foo: %{type: :string}], other: 1)
+      {:ok, %{foo: "hi"}, ["bar"]}
   """
 
   @type argv :: [String.t()]
   @type options :: [subcommands: Subcommands.t(), switches: Switches.t(), other: Other.t()]
-  @spec parse(argv, Keyword.t()) :: {:ok, [String.t()], map, [String.t()]} | {:error, Errors.t()}
+  @spec parse(argv, Keyword.t()) :: {:ok, map, [String.t()]} | {:error, Errors.t()}
   def parse(args, options) do
     with {:ok, opts} <- options_map(options),
-         {:ok, subcommands, rest} <- Subcommands.parse(args, opts[:subcommands]),
-         {:ok, switches, other} <- Switches.parse(rest, opts[:switches]),
+         {:ok, switches, other} <- Switches.parse(args, opts[:switches]),
          {:ok} <- Other.check(other, opts[:other]),
-         {:ok} <- Logging.apply(switches),
-         {:ok, subcommands, switches} <- move_help(subcommands, switches) do
-      {:ok, subcommands, switches, other}
+         {:ok} <- Logging.apply(switches) do
+      {:ok, switches, other}
     else
       {:error, %SwitchErrors{} = errors} ->
         {:error, %Errors{switches: errors}}
 
-      {:error, %SubcommandErrors{} = errors} ->
-        {:error, %Errors{subcommands: errors}}
-
       {:error, %OtherErrors{} = errors} ->
         {:error, %Errors{other: errors}}
-    end
-  end
-
-  defp move_help(subcommands, switches) do
-    if "help" in subcommands do
-      {
-        :ok,
-        Enum.filter(subcommands, &(&1 != "help")),
-        Map.put(switches, :help, true)
-      }
-    else
-      {:ok, subcommands, switches}
     end
   end
 

@@ -1,51 +1,10 @@
 defmodule HelpfulOptions.Subcommands do
-  @type t :: [[String.t()]] | :any
-
-  alias HelpfulOptions.SubcommandErrors
-
-  @spec parse([String.t()], [[String.t()]] | :any | nil) ::
-          {:ok, [String.t()], [String.t()]} | {:error, HelpfulOptions.SubcommandsErrors.t()}
+  @spec strip([String.t()]) :: {:ok, [String.t()], [String.t()]}
   @doc ~S"""
-  Subcommands are specified as a list of lists of strings:
-
-      iex> ["some", "subcommand"]
-      iex> |> HelpfulOptions.Subcommands.parse([~w(other), ~w(some subcommand)])
-      {:ok, ["some", "subcommand"], []}
-
-  Everything else, from the first parameter beginning with a hyphen is returned in a second list:
-
-      iex> ["some", "subcommand", "--other"]
-      iex> |> HelpfulOptions.Subcommands.parse([~w(some subcommand)])
-      {:ok, ["some", "subcommand"], ["--other"]}
-
-  `help` is accepted by default:
-
-      iex> HelpfulOptions.Subcommands.parse(["help"])
-      {:ok, ["help"], []}
-
-  Unexpected subcommands are an error:
-
-      iex> ["foo", "bar"]
-      iex> |> HelpfulOptions.Subcommands.parse(subcommands: [~w(other), ~w(some subcommand)])
-      {:error, %HelpfulOptions.SubcommandErrors{unknown: ["foo", "bar"]}}
-
-  Alternatively, you can specify `:any`:
-
-      iex> HelpfulOptions.Subcommands.parse(["any", "text"], :any)
-      {:ok, ["any", "text"], []}
+      iex> HelpfulOptions.Subcommands.strip(["foo", "bar", "--baz", "qux"])
+      {:ok, ["foo", "bar"], ["--baz", "qux"]}
   """
-  def parse(args, acceptable \\ nil) do
-    help = if Enum.member?(args, "help"), do: ["help"], else: []
-    args = Enum.reject(args, &(&1 == "help"))
-    with {:ok, subcommands, rest} <- extract(args),
-         {:ok} <- check(subcommands, acceptable) do
-      {:ok, help ++ subcommands, rest}
-    else
-      {:error, errors} -> {:error, errors}
-    end
-  end
-
-  defp extract(args) do
+  def strip(args) do
     args
     |> Enum.reduce(
       {[], []},
@@ -64,25 +23,5 @@ defmodule HelpfulOptions.Subcommands do
       end
     )
     |> then(fn {subommands, rest} -> {:ok, subommands, rest} end)
-  end
-
-  defp check([], _acceptable), do: {:ok}
-
-  defp check(_subcommands, :any), do: {:ok}
-
-  defp check(subcommands, nil) do
-    {:error, %SubcommandErrors{unexpected: subcommands}}
-  end
-
-  defp check(subcommands, acceptable) do
-    acceptable = acceptable || []
-
-    found = Enum.member?(acceptable, subcommands)
-
-    if found do
-      {:ok}
-    else
-      {:error, %SubcommandErrors{unknown: subcommands}}
-    end
   end
 end
