@@ -342,7 +342,7 @@ defmodule HelpfulOptions.Switches do
 
   @help_left_column_width 31
 
-  @spec help(t) :: String.t()
+  @spec help(t) :: {:ok, String.t()}
   @doc ~S"""
   Returns the help block related to switches
 
