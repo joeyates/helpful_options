@@ -339,4 +339,91 @@ defmodule HelpfulOptions.Switches do
     |> Enum.filter(& &1)
     |> Enum.into(%{})
   end
+
+  @help_left_column_width 31
+
+  @spec help(t) :: String.t()
+  @doc ~S"""
+  Returns the help block related to switches
+
+      iex> HelpfulOptions.Switches.help(foo: %{type: :string}, bar: %{type: :integer})
+      {
+        :ok,
+        "-h, --help                     Show a help message\n" <>
+        "-q, --quiet                    Suppress output\n" <>
+        "-v, --verbose                  Increase verbosity\n" <>
+        "  --foo=FOO                    Optional parameter\n" <>
+        "  --bar=BAR                    Optional parameter"
+      }
+
+  Returns a generic test when `:any` is used:
+
+      iex> HelpfulOptions.Switches.help(:any)
+      {:ok, "Accepts any switch-type arguments"}
+
+  By default, it returns an empty string:
+
+      iex> HelpfulOptions.Switches.help(nil)
+      {
+        :ok,
+        "-h, --help                     Show a help message\n" <>
+        "-q, --quiet                    Suppress output\n" <>
+        "-v, --verbose                  Increase verbosity"
+      }
+  """
+  def help(switches) do
+    with {:ok, parse_type, updated} <- from_supplied(switches),
+         {:ok} <- validate(updated) do
+      {:ok, do_help(switches, parse_type, updated)}
+    else
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  defp do_help(:any, :switches, []), do: "Accepts any switch-type arguments"
+
+  defp do_help(_, :strict, switches) do
+    switches
+    |> Enum.map(&switch_help/1)
+    |> Enum.join("\n")
+  end
+
+  defp switch_help({name, options}) do
+    parameter = name |> Atom.to_string() |> String.upcase()
+
+    left_column =
+      cond do
+        options.type in @parameter_types and options[:short] ->
+          "-#{options.short} #{parameter}, --#{name}=#{parameter}"
+
+        options.type in @parameter_types ->
+          "  --#{name}=#{parameter}"
+
+        options[:short] ->
+          "-#{options.short}, --#{name}"
+
+        true ->
+          "  --#{name}"
+      end
+
+    extra = @help_left_column_width - String.length(left_column)
+
+    padding =
+      if extra > 0 do
+        String.duplicate(" ", extra)
+      else
+        ""
+      end
+
+    right_column = if options[:description], do: [options.description], else: []
+    right_column = if options[:required], do: ["Required" | right_column], else: right_column
+    right_column = if length(right_column) == 0, do: ["Optional parameter"], else: right_column
+
+    right_column =
+      if options[:default], do: ["Default: #{options.default}" | right_column], else: right_column
+
+    right_column = right_column |> Enum.reverse() |> Enum.join(". ")
+    "#{left_column}#{padding}#{right_column}"
+  end
 end

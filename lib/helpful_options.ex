@@ -188,33 +188,24 @@ defmodule HelpfulOptions do
     end
   end
 
-  def help(switches) do
-    items =
-      switches
-      |> Enum.map(&switch_help/1)
-      |> Enum.join("\n")
-
-    "Options:\n#{items}"
+  @spec help(options) :: String.t()
+  @doc ~S"""
+      iex> HelpfulOptions.help(switches: [foo: %{type: :string}])
+      {
+        :ok,
+        "-h, --help                     Show a help message\n" <>
+        "-q, --quiet                    Suppress output\n" <>
+        "-v, --verbose                  Increase verbosity\n" <>
+        "  --foo=FOO                    Optional parameter"
+      }
+  """
+  def help(options) do
+    Switches.help(options[:switches])
   end
 
-  defp switch_help({name, options}) do
-    left_column = if options.type == :string do
-      parameter = name |> Atom.to_string() |> String.upcase()
-      "  --#{name}=#{parameter}  "
-    else
-      "  --#{name}  "
-    end
-    extra = @help_left_column_width - String.length(left_column)
-    padding = if extra > 0 do
-      String.duplicate(" ", extra)
-    else
-      ""
-    end
-    right_column = if options[:description], do: [options.description], else: []
-    right_column = if options[:required], do: ["Required" | right_column], else: right_column
-    right_column = if length(right_column) == 0, do: ["Optional parameter"], else: right_column
-    right_column = right_column |> Enum.reverse() |> Enum.join(". ")
-    "#{left_column}#{padding}#{right_column}"
+  @spec format_error(Errors.t()) :: String.t()
+  def format_error(_errors) do
+    ""
   end
 
   defp options_map(options), do: {:ok, Enum.into(options, %{})}
