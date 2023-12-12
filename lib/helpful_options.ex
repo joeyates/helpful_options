@@ -178,7 +178,7 @@ defmodule HelpfulOptions do
 
   @type argv :: [String.t()]
   @type options :: [switches: Switches.t(), other: Other.t()]
-  @spec parse(argv, Keyword.t()) :: {:ok, map, [String.t()]} | {:error, Errors.t()}
+  @spec parse(argv, options) :: {:ok, map, [String.t()]} | {:error, Errors.t()}
   def parse(argv, options) do
     with {:ok, opts} <- options_map(options),
          {:ok, switches, other} <- Switches.parse(argv, opts[:switches]),
