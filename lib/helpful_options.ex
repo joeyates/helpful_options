@@ -171,7 +171,7 @@ defmodule HelpfulOptions do
   """
 
   @type argv :: [String.t()]
-  @type options :: [subcommands: Subcommands.t(), switches: Switches.t(), other: Other.t()]
+  @type options :: [switches: Switches.t(), other: Other.t()]
   @spec parse(argv, Keyword.t()) :: {:ok, map, [String.t()]} | {:error, Errors.t()}
   def parse(args, options) do
     with {:ok, opts} <- options_map(options),
@@ -201,11 +201,6 @@ defmodule HelpfulOptions do
   """
   def help(options) do
     Switches.help(options[:switches])
-  end
-
-  @spec format_error(Errors.t()) :: String.t()
-  def format_error(_errors) do
-    ""
   end
 
   defp options_map(options), do: {:ok, Enum.into(options, %{})}
