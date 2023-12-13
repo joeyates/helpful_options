@@ -7,10 +7,15 @@ defmodule HelpfulOptions.Logging do
     quiet = Map.get(switches, :quiet, false)
 
     level =
-      if quiet do
-        0
-      else
-        1 + verbose
+      cond do
+        quiet ->
+          0
+
+        verbose ->
+          2
+
+        true ->
+          1
       end
 
     level_atom =
