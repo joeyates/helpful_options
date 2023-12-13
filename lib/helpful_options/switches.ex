@@ -413,7 +413,7 @@ defmodule HelpfulOptions.Switches do
       if extra > 0 do
         String.duplicate(" ", extra)
       else
-        ""
+        " "
       end
 
     right_column = if options[:description], do: [options.description], else: []
