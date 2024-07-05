@@ -47,7 +47,7 @@ See `HelpfulOptions.Subcommands.strip/1`.
 # Usage
 
 ```elixir
-@switches: [
+@switches [
   foo: %{type: :string, required: true},
   dry_run: %{type: :boolean},
   bar: %{type: :string, required: true}
