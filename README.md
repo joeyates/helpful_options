@@ -47,15 +47,15 @@ See `HelpfulOptions.Subcommands.strip/1`.
 # Usage
 
 ```elixir
-@switches [
+switches = [
   foo: %{type: :string, required: true},
   dry_run: %{type: :boolean},
   bar: %{type: :string, required: true}
 ]
 
-HelpfulOptions.parse(System.argv(), switches: @switches, other: 1) do
-  {:ok, switches, [url]} ->
-    MyApp.add_remote(switches, url)
+case HelpfulOptions.parse(System.argv(), switches: switches, other: 1) do
+  {:ok, parameters, [url]} ->
+    MyApp.add_remote(parameters, url)
     0
   {:error, error} ->
     IO.puts(:stderr, error)
