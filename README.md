@@ -53,8 +53,7 @@ See `HelpfulOptions.Subcommands.strip/1`.
   bar: %{type: :string, required: true}
 ]
 
-["-t", "feature", "-b", "main", "git@example.com:foo/bar"]
-|> HelpfulOptions.parse(args, switches: @switches, other: 1) do
+HelpfulOptions.parse(System.argv(), switches: @switches, other: 1) do
   {:ok, switches, [url]} ->
     MyApp.add_remote(switches, url)
     0
