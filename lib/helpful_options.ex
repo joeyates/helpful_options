@@ -116,6 +116,16 @@ defmodule HelpfulOptions do
       iex> HelpfulOptions.parse([], switches: [bar: %{type: :string, default: "Hello"}])
       {:ok, %{bar: "Hello"}, []}
 
+  Switches which internally contain underscores, will be expected to contain dashes:
+
+      iex> HelpfulOptions.parse(["--foo-bar", "hi"], switches: [foo_bar: %{type: :string}])
+      {:ok, %{foo_bar: "hi"}, []}
+
+  Supplying underscored switches with dashes will result in an error:
+
+      iex> HelpfulOptions.parse(["--foo_bar", "hi"], switches: [foo_bar: %{type: :string}])
+      {:error, %HelpfulOptions.Errors{switches: %HelpfulOptions.SwitchErrors{unknown: ["--foo_bar"]}}}
+
   ## Default switches
 
     `--help`, `--quiet` and `--verbose` are handled automatically.
