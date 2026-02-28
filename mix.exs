@@ -31,8 +31,23 @@ defmodule HelpfulOptions.MixProject do
   defp docs() do
     [
       source_ref: "v#{@version}",
+      source_url: "https://github.com/joeyates/helpful_options",
       main: "readme",
-      extras: ["README.md"]
+      extras: ["README.md", "CHANGELOG.md"],
+      groups_for_modules: [
+        Core: [
+          HelpfulOptions,
+          HelpfulOptions.Switches,
+          HelpfulOptions.Subcommands,
+          HelpfulOptions.Other,
+          HelpfulOptions.Logging
+        ],
+        Errors: [
+          HelpfulOptions.Errors,
+          HelpfulOptions.SwitchErrors,
+          HelpfulOptions.OtherErrors
+        ]
+      ]
     ]
   end
 

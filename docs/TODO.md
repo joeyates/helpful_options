@@ -85,7 +85,7 @@ Most modules are missing `@moduledoc`, which means ExDoc shows them with no desc
 
 # Improve ExDoc Configuration
 
-Status: [ ]
+Status: [x]
 
 ## Description
 
