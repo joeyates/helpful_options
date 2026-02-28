@@ -103,3 +103,23 @@ Enhance the generated documentation site with better organization and metadata.
 # Remove Normal Tests that Duplicate Doctests in parse_commands_test.exs
 
 Status: [x]
+
+---
+
+# Allow `:any` Placeholder in `parse_commands/2` Commands List
+
+Status: [ ]
+
+## Description
+
+Allow individual elements in a command definition's `commands` list to be the atom `:any`, acting as a wildcard that matches any single subcommand token. This enables defining command patterns like `[:any, "add"]` that match any first-level subcommand followed by `"add"`.
+
+## Technical Specifics
+
+- Change the matching logic in `parse_commands/2` from exact equality (`defn.commands == subcommands`) to a per-element comparison that treats `:any` as matching any string
+- Update `check_duplicate_commands/1` to account for `:any` wildcards
+- Update the `@type command_definition` spec so `commands` is typed as `[String.t() | :any]`
+- Add doctests and unit tests covering:
+  - `[:any]` matching a single arbitrary command
+  - `[:any, "add"]` matching `["remote", "add"]` but not `["remote", "remove"]`
+  - Specificity: a definition with an exact string should be preferred over `:any` when both match (sort exact matches above wildcard matches)
