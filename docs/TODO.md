@@ -97,3 +97,9 @@ Enhance the generated documentation site with better organization and metadata.
 - Add a `CHANGELOG.md` file and include it in the `extras` list
 - Add `source_url` to docs config to enable "Edit on GitHub" links
 - Consider adding a `logo` to docs config
+
+---
+
+# Remove Normal Tests that Duplicate Doctests in parse_commands_test.exs
+
+Status: [x]
