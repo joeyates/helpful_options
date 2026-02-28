@@ -37,6 +37,53 @@ defmodule HelpfulOptions.ParseCommandsTest do
       assert {:ok, [], %{}, []} =
                HelpfulOptions.parse_commands([], definitions)
     end
+
+    test ":any matches a single arbitrary subcommand" do
+      definitions = [
+        %{commands: [:any], switches: [verbose: %{type: :boolean}], other: nil}
+      ]
+
+      assert {:ok, [:any], %{verbose: true}, []} =
+               HelpfulOptions.parse_commands(["something", "--verbose"], definitions)
+    end
+
+    test "[:any, \"add\"] matches [\"remote\", \"add\"]" do
+      definitions = [
+        %{commands: [:any, "add"], switches: [name: %{type: :string}], other: nil}
+      ]
+
+      assert {:ok, [:any, "add"], %{name: "origin"}, []} =
+               HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
+    end
+
+    test "[:any, \"add\"] does not match [\"remote\", \"remove\"]" do
+      definitions = [
+        %{commands: [:any, "add"], switches: [name: %{type: :string}], other: nil}
+      ]
+
+      assert {:error, {:unknown_command, ["remote", "remove"]}} =
+               HelpfulOptions.parse_commands(["remote", "remove", "--name", "origin"], definitions)
+    end
+
+    test "exact definition is preferred over :any definition of equal length" do
+      definitions = [
+        %{commands: ["remote", "add"], switches: [name: %{type: :string}], other: nil},
+        %{commands: [:any, "add"], switches: [label: %{type: :string}], other: nil}
+      ]
+
+      assert {:ok, ["remote", "add"], %{name: "origin"}, []} =
+               HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
+    end
+
+    test "duplicate :any definitions are detected" do
+      definitions = [
+        %{commands: [:any], switches: nil, other: nil},
+        %{commands: [:any], switches: [verbose: %{type: :boolean}], other: nil}
+      ]
+
+      assert {:error, {:duplicate_commands, [:any]}} =
+               HelpfulOptions.parse_commands(["something"], definitions)
+    end
   end
 
   describe "parse_commands!/2" do
