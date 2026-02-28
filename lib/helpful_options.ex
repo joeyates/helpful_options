@@ -8,6 +8,7 @@ defmodule HelpfulOptions do
     Logging,
     Other,
     OtherErrors,
+    Subcommands,
     Switches,
     SwitchErrors
   }
@@ -222,6 +223,91 @@ defmodule HelpfulOptions do
     end
   end
 
+  @type command_definition :: %{
+    commands: [String.t()],
+    switches: Switches.t(),
+    other: Other.t()
+  }
+
+  @doc ~S"""
+  Parses command-line arguments against a list of command definitions.
+
+  Uses `Subcommands.strip/1` to extract subcommands from argv, matches them
+  against the definitions, and delegates to `parse/2` with the matched
+  definition's `:switches` and `:other` config.
+
+  Returns `{:ok, matched_commands, switches_map, other_args}` on success.
+
+  ## Examples
+
+  A simple command with switches:
+
+      iex> definitions = [
+      iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string}], other: nil},
+      iex>   %{commands: ["remote"], switches: [verbose: %{type: :boolean}], other: nil}
+      iex> ]
+      iex> HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
+      {:ok, ["remote", "add"], %{name: "origin"}, []}
+
+  A root command (empty commands list):
+
+      iex> definitions = [
+      iex>   %{commands: [], switches: [verbose: %{type: :boolean}], other: :any}
+      iex> ]
+      iex> HelpfulOptions.parse_commands(["--verbose"], definitions)
+      {:ok, [], %{verbose: true}, []}
+
+  Unknown command returns an error:
+
+      iex> definitions = [
+      iex>   %{commands: ["remote"], switches: nil, other: nil}
+      iex> ]
+      iex> HelpfulOptions.parse_commands(["branch", "--verbose"], definitions)
+      {:error, {:unknown_command, ["branch"]}}
+
+  Duplicate command definitions return an error:
+
+      iex> definitions = [
+      iex>   %{commands: ["remote"], switches: nil, other: nil},
+      iex>   %{commands: ["remote"], switches: [verbose: %{type: :boolean}], other: nil}
+      iex> ]
+      iex> HelpfulOptions.parse_commands(["remote"], definitions)
+      {:error, {:duplicate_commands, ["remote"]}}
+
+  Parse errors are returned as-is:
+
+      iex> definitions = [
+      iex>   %{commands: ["run"], switches: [count: %{type: :integer}], other: nil}
+      iex> ]
+      iex> HelpfulOptions.parse_commands(["run", "--count", "abc"], definitions)
+      {:error, %HelpfulOptions.Errors{switches: %HelpfulOptions.SwitchErrors{incorrect: [{"--count", "abc"}]}}}
+  """
+  @spec parse_commands(argv, [command_definition]) ::
+          {:ok, [String.t()], map, [String.t()]} | {:error, term}
+  def parse_commands(argv, definitions) do
+    {:ok, subcommands, rest} = Subcommands.strip(argv)
+
+    sorted = Enum.sort_by(definitions, &length(&1.commands), :desc)
+
+    with :ok <- check_duplicate_commands(sorted) do
+      case Enum.find(sorted, fn defn -> defn.commands == subcommands end) do
+        nil ->
+          {:error, {:unknown_command, subcommands}}
+
+        matched ->
+          options = [
+            switches: matched[:switches],
+            other: matched[:other]
+          ]
+
+          case parse(rest, options) do
+            {:ok, switches, other} -> {:ok, matched.commands, switches, other}
+            {:error, _} = error -> error
+          end
+      end
+    end
+  end
+
   @spec help(options) :: {:ok, String.t()}
   @doc ~S"""
       iex> HelpfulOptions.help(switches: [foo: %{type: :string}])
@@ -251,4 +337,14 @@ defmodule HelpfulOptions do
   end
 
   defp options_map(options), do: {:ok, Enum.into(options, %{})}
+
+  defp check_duplicate_commands(sorted_definitions) do
+    sorted_definitions
+    |> Enum.group_by(& &1.commands)
+    |> Enum.find(fn {_commands, defs} -> length(defs) > 1 end)
+    |> case do
+      nil -> :ok
+      {commands, _} -> {:error, {:duplicate_commands, commands}}
+    end
+  end
 end
