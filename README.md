@@ -80,7 +80,7 @@ Three switches are added by the library:
   ]
 ```
 
-See the doc tests in [lib/helpful_options.ex] for more examples.
+See the doc tests in `HelpfulOptions` for more examples.
 
 ## Installation
 
@@ -90,7 +90,7 @@ to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:helpful_options, "~> 0.1.0"}
+    {:helpful_options, "~> 0.3"}
   ]
 end
 ```

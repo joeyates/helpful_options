@@ -55,7 +55,7 @@ Fix several typos across key project files that affect the project's presentatio
 
 # Fix Broken Link and Outdated Version in README
 
-Status: [ ]
+Status: [x]
 
 ## Description
 
