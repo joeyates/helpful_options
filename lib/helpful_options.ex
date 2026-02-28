@@ -224,7 +224,7 @@ defmodule HelpfulOptions do
   end
 
   @type command_definition :: %{
-    commands: [String.t()],
+    commands: [String.t() | :any],
     switches: Switches.t(),
     other: Other.t()
   }
@@ -257,6 +257,23 @@ defmodule HelpfulOptions do
       iex> HelpfulOptions.parse_commands(["--verbose"], definitions)
       {:ok, [], %{verbose: true}, []}
 
+  A wildcard entry `:any` matches any single subcommand token at that position:
+
+      iex> definitions = [
+      iex>   %{commands: [:any, "add"], switches: [name: %{type: :string}], other: nil}
+      iex> ]
+      iex> HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
+      {:ok, [:any, "add"], %{name: "origin"}, []}
+
+  When both an exact and a wildcard definition could match, the exact one wins:
+
+      iex> definitions = [
+      iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string}], other: nil},
+      iex>   %{commands: [:any, "add"], switches: [label: %{type: :string}], other: nil}
+      iex> ]
+      iex> HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
+      {:ok, ["remote", "add"], %{name: "origin"}, []}
+
   Unknown command returns an error:
 
       iex> definitions = [
@@ -287,10 +304,14 @@ defmodule HelpfulOptions do
   def parse_commands(argv, definitions) do
     {:ok, subcommands, rest} = Subcommands.strip(argv)
 
-    sorted = Enum.sort_by(definitions, &length(&1.commands), :desc)
+    sorted =
+      Enum.sort_by(definitions, fn defn ->
+        first_any = Enum.find_index(defn.commands, &(&1 == :any)) || length(defn.commands)
+        {-length(defn.commands), -first_any}
+      end)
 
     with :ok <- check_duplicate_commands(sorted) do
-      case Enum.find(sorted, fn defn -> defn.commands == subcommands end) do
+      case Enum.find(sorted, fn defn -> commands_match?(defn.commands, subcommands) end) do
         nil ->
           {:error, {:unknown_command, subcommands}}
 
@@ -376,6 +397,16 @@ defmodule HelpfulOptions do
   end
 
   defp options_map(options), do: {:ok, Enum.into(options, %{})}
+
+  defp commands_match?(patterns, commands) do
+    length(patterns) == length(commands) and
+      patterns
+      |> Enum.zip(commands)
+      |> Enum.all?(fn
+        {:any, _} -> true
+        {p, c} -> p == c
+      end)
+  end
 
   defp check_duplicate_commands(sorted_definitions) do
     sorted_definitions

@@ -17,28 +17,28 @@ when both would match.
 
 ## Tasks
 
-- [ ] Update `@type command_definition` so `commands` is typed as `[String.t() | :any]`
-- [ ] Add a private `commands_match?/2` predicate that compares two same-length
+- [x] Update `@type command_definition` so `commands` is typed as `[String.t() | :any]`
+- [x] Add a private `commands_match?/2` predicate that compares two same-length
       lists element-wise, treating `:any` as matching any string
-- [ ] Replace the `defn.commands == subcommands` equality check in `parse_commands/2`
+- [x] Replace the `defn.commands == subcommands` equality check in `parse_commands/2`
       with `commands_match?(defn.commands, subcommands)`
-- [ ] Update the sort in `parse_commands/2` to sort by length descending, then
+- [x] Update the sort in `parse_commands/2` to sort by length descending, then
       by specificity descending (position of the first `:any` entry descending —
       a wildcard appearing later in the list is more specific than one appearing
       earlier) so exact definitions are preferred over wildcard ones of the same
       length
-- [ ] Update `check_duplicate_commands/1` to group by a normalised key rather
+- [x] Update `check_duplicate_commands/1` to group by a normalised key rather
       than the raw `commands` list, so two definitions that would always match
       the same inputs (e.g. `[:any]` and `[:any]`) are still flagged as
       duplicates
-- [ ] Add doctests to `parse_commands/2` illustrating `:any` usage
-- [ ] Add unit tests in `parse_commands_test.exs` covering:
+- [x] Add doctests to `parse_commands/2` illustrating `:any` usage
+- [x] Add unit tests in `parse_commands_test.exs` covering:
       - `[:any]` matching a single arbitrary subcommand
       - `[:any, "add"]` matching `["remote", "add"]` but not `["remote", "remove"]`
       - exact definition preferred over `:any` definition of equal length
       - duplicate `:any` definitions detected and returned as an error
-- [ ] Address any additional implementation details that arise during development
-- [ ] Mark the plan as "done"
+- [x] Address any additional implementation details that arise during development
+- [x] Mark the plan as "done"
 
 ## Principal Files
 
