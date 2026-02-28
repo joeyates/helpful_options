@@ -308,6 +308,45 @@ defmodule HelpfulOptions do
     end
   end
 
+  @doc ~S"""
+  Bang variant of `parse_commands/2` that raises on error.
+
+      iex> definitions = [
+      iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string}], other: nil}
+      iex> ]
+      iex> HelpfulOptions.parse_commands!(["remote", "add", "--name", "origin"], definitions)
+      {["remote", "add"], %{name: "origin"}, []}
+
+      iex> definitions = [
+      iex>   %{commands: ["remote"], switches: nil, other: nil}
+      iex> ]
+      iex> HelpfulOptions.parse_commands!(["branch"], definitions)
+      ** (ArgumentError) unknown command: branch
+
+      iex> definitions = [
+      iex>   %{commands: ["remote"], switches: nil, other: nil},
+      iex>   %{commands: ["remote"], switches: nil, other: nil}
+      iex> ]
+      iex> HelpfulOptions.parse_commands!(["remote"], definitions)
+      ** (ArgumentError) duplicate commands: remote
+  """
+  @spec parse_commands!(argv, [command_definition]) :: {[String.t()], map, [String.t()]}
+  def parse_commands!(argv, definitions) do
+    case parse_commands(argv, definitions) do
+      {:ok, commands, switches, other} ->
+        {commands, switches, other}
+
+      {:error, {:unknown_command, commands}} ->
+        raise ArgumentError, "unknown command: #{Enum.join(commands, " ")}"
+
+      {:error, {:duplicate_commands, commands}} ->
+        raise ArgumentError, "duplicate commands: #{Enum.join(commands, " ")}"
+
+      {:error, errors} ->
+        raise ArgumentError, to_string(errors)
+    end
+  end
+
   @spec help(options) :: {:ok, String.t()}
   @doc ~S"""
       iex> HelpfulOptions.help(switches: [foo: %{type: :string}])
