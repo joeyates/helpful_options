@@ -108,7 +108,7 @@ Status: [x]
 
 # Allow `:any` Placeholder in `parse_commands/2` Commands List
 
-Status: [ ]
+Status: [x]
 
 ## Description
 
