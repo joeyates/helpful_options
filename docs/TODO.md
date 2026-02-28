@@ -39,7 +39,7 @@ This would simplify handling multi-command CLIs (like Git) by defining all comma
 
 # Fix Typos in mix.exs and README
 
-Status: [ ]
+Status: [x]
 
 ## Description
 

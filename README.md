@@ -7,7 +7,7 @@ Provides
 * rich parameter declaration,
 * formatted error messages,
 * automatic logging setup,
-* formatted paremeter descriptions for `--help`.
+* formatted parameter descriptions for `--help`.
 
 It is intended for use with Mix tasks,
 Bakeware and other systems for creating Elixir
@@ -38,7 +38,7 @@ Subcommands, like Git's `remote` can be one or more words.
 You probably want to handle each subcommand with its own block of code,
 with its own switches.
 
-This libarary's main function is `HelpfulOptions.parse/2`:
+This library's main function is `HelpfulOptions.parse/2`:
 
 `parse/2` does **not** process subcommands.
 It assumes you have stripped them off.

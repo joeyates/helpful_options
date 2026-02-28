@@ -8,7 +8,7 @@ defmodule HelpfulOptions.MixProject do
       app: :helpful_options,
       version: @version,
       elixir: "~> 1.14",
-      description: "A configurable command-line otptions parser",
+      description: "A configurable command-line options parser",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       docs: docs(),
