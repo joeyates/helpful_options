@@ -58,4 +58,4 @@ Also implement a bang variant `parse_commands!/2` that raises on error.
 - [x] Add `Subcommands` alias and implement `parse_commands/2` with doctests
 - [x] Implement `parse_commands!/2` with doctests
 - [x] Add test file for edge-case tests (multiple definitions, no match, parse errors)
-- [ ] Ensure all existing tests still pass
+- [x] Ensure all existing tests still pass
