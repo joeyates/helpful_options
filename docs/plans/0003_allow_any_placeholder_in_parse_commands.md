@@ -23,8 +23,10 @@ when both would match.
 - [ ] Replace the `defn.commands == subcommands` equality check in `parse_commands/2`
       with `commands_match?(defn.commands, subcommands)`
 - [ ] Update the sort in `parse_commands/2` to sort by length descending, then
-      by specificity descending (number of `:any` entries ascending) so exact
-      definitions are preferred over wildcard ones of the same length
+      by specificity descending (position of the first `:any` entry descending —
+      a wildcard appearing later in the list is more specific than one appearing
+      earlier) so exact definitions are preferred over wildcard ones of the same
+      length
 - [ ] Update `check_duplicate_commands/1` to group by a normalised key rather
       than the raw `commands` list, so two definitions that would always match
       the same inputs (e.g. `[:any]` and `[:any]`) are still flagged as
