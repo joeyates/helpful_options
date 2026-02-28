@@ -35,16 +35,22 @@ git remote add -t feature -b main git@example.com:foo/bar
 ```
 
 Subcommands, like Git's `remote` can be one or more words.
-You probably want to handle each subcommand with its own block of code,
-with its own switches.
+Switches are `--key value` pairs.
+Other parameters are positional arguments that follow the switches.
 
-This library's main function is `HelpfulOptions.parse/2`:
+This library provides two main functions:
 
-`parse/2` does **not** process subcommands.
-It assumes you have stripped them off.
-See `HelpfulOptions.Subcommands.strip/1`.
+* `HelpfulOptions.parse/2` — for simple CLIs that only receive switches
+  (and optional positional arguments).
+* `HelpfulOptions.parse_commands/2` — for CLIs that accept commands
+  and subcommands, each with their own switches and other parameters.
 
 # Usage
+
+## Simple CLI with `parse/2`
+
+Use `parse/2` when your program does not have subcommands — it only
+receives switches and, optionally, positional ("other") arguments.
 
 ```elixir
 switches = [
@@ -62,6 +68,43 @@ case HelpfulOptions.parse(System.argv(), switches: switches, other: 1) do
     1
 end
 ```
+
+## CLI with commands via `parse_commands/2`
+
+Use `parse_commands/2` when your program handles multiple commands
+(and, optionally, subcommands), each with its own set of switches
+and other parameters — similar to tools like `git`, `mix`, or `docker`.
+
+You provide a list of command definitions. Each definition specifies
+the command words to match, the expected switches and other parameters:
+
+```elixir
+definitions = [
+  %{commands: ["remote", "add"], switches: [name: %{type: :string, required: true}], other: 1},
+  %{commands: ["remote"], switches: [verbose: %{type: :boolean}], other: nil},
+  %{commands: ["status"], switches: [short: %{type: :boolean}], other: nil},
+  %{commands: [], switches: [version: %{type: :boolean}], other: nil}
+]
+
+case HelpfulOptions.parse_commands(System.argv(), definitions) do
+  {:ok, ["remote", "add"], switches, [url]} ->
+    MyApp.add_remote(switches.name, url)
+  {:ok, ["remote"], switches, _other} ->
+    MyApp.list_remotes(switches)
+  {:ok, ["status"], switches, _other} ->
+    MyApp.show_status(switches)
+  {:ok, [], switches, _other} ->
+    if switches[:version], do: MyApp.print_version()
+  {:error, {:unknown_command, commands}} ->
+    IO.puts(:stderr, "Unknown command: #{Enum.join(commands, " ")}")
+  {:error, error} ->
+    IO.puts(:stderr, to_string(error))
+end
+```
+
+Definitions are matched longest-first, so `["remote", "add"]` is
+tried before `["remote"]`. An empty commands list (`[]`) matches
+when no subcommand is given.
 
 ## `switches`
 
