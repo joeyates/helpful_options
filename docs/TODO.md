@@ -70,7 +70,7 @@ The README has a broken markdown link and an outdated install version.
 
 # Add @moduledoc to All Public Modules
 
-Status: [ ]
+Status: [x]
 
 ## Description
 

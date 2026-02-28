@@ -1,4 +1,10 @@
 defmodule HelpfulOptions.Other do
+  @moduledoc """
+  Validates the count of non-switch, non-subcommand arguments ("other" parameters).
+
+  Supports exact counts, min/max ranges, and `:any` to accept any number.
+  """
+
   alias HelpfulOptions.OtherErrors
 
   @type t :: other_options | :any | nil

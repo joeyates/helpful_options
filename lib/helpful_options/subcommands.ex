@@ -1,4 +1,11 @@
 defmodule HelpfulOptions.Subcommands do
+  @moduledoc """
+  Extracts subcommands from an argument list.
+
+  Subcommands are the leading non-dashed arguments in an argv list.
+  `strip/1` splits them from the remaining arguments.
+  """
+
   @spec strip([String.t()]) :: {:ok, [String.t()], [String.t()]}
   @doc ~S"""
       iex> HelpfulOptions.Subcommands.strip(["foo", "bar", "--baz", "qux"])

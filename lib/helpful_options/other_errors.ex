@@ -1,4 +1,10 @@
 defmodule HelpfulOptions.OtherErrors do
+  @moduledoc """
+  Error struct for "other" parameter validation failures.
+
+  Implements `String.Chars` to produce human-readable error messages.
+  """
+
   @type t :: %__MODULE__{
           actual: non_neg_integer,
           min: non_neg_integer,

@@ -1,4 +1,8 @@
 defmodule HelpfulOptions.Logging do
+  @moduledoc """
+  Configures the Logger level based on `--verbose` and `--quiet` switches.
+  """
+
   require Logger
 
   @spec apply(map()) :: {:ok}

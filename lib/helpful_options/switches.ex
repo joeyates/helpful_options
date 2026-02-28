@@ -1,4 +1,11 @@
 defmodule HelpfulOptions.Switches do
+  @moduledoc """
+  Parses and validates command-line switches.
+
+  Switches are declared as a keyword list of maps, each specifying the switch's
+  type, whether it is required, and optional defaults, short aliases, and descriptions.
+  """
+
   alias HelpfulOptions.SwitchErrors
 
   @default_switches [

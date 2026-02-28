@@ -1,4 +1,11 @@
 defmodule HelpfulOptions.SwitchErrors do
+  @moduledoc """
+  Error struct for switch validation failures.
+
+  Covers missing, invalid, incorrect, and unknown switches.
+  Implements `String.Chars` to produce human-readable error messages.
+  """
+
   alias HelpfulOptions.Switches
 
   @type t :: %__MODULE__{
