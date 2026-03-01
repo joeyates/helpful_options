@@ -8,6 +8,7 @@ defmodule HelpfulOptions do
     Logging,
     Other,
     OtherErrors,
+    ParsedCommand,
     Subcommands,
     Switches,
     SwitchErrors
@@ -241,7 +242,7 @@ defmodule HelpfulOptions do
       iex>   %{commands: ["remote"], switches: [verbose: %{type: :boolean}]}
       iex> ]
       iex> HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
-      {:ok, ["remote", "add"], %{name: "origin"}, []}
+      {:ok, %HelpfulOptions.ParsedCommand{commands: ["remote", "add"], switches: %{name: "origin"}, other: []}}
 
   A root command (empty commands list) works like `parse/2`:
 
@@ -249,7 +250,7 @@ defmodule HelpfulOptions do
       iex>   %{commands: [], switches: [verbose: %{type: :boolean}]}
       iex> ]
       iex> HelpfulOptions.parse_commands(["--verbose"], definitions)
-      {:ok, [], %{verbose: true}, []}
+      {:ok, %HelpfulOptions.ParsedCommand{commands: [], switches: %{verbose: true}, other: []}}
 
   An unknown command returns an error:
 
@@ -265,7 +266,7 @@ defmodule HelpfulOptions do
       iex>   %{commands: ["deploy"], switches: [env: %{type: :string}], other: 1}
       iex> ]
       iex> HelpfulOptions.parse_commands(["deploy", "--env", "prod", "myapp"], definitions)
-      {:ok, ["deploy"], %{env: "prod"}, ["myapp"]}
+      {:ok, %HelpfulOptions.ParsedCommand{commands: ["deploy"], switches: %{env: "prod"}, other: ["myapp"]}}
 
   Returns `OtherErrors` when wrong number of other args is given:
 
@@ -281,7 +282,7 @@ defmodule HelpfulOptions do
       iex>   %{commands: ["remote", "add", :source]}
       iex> ]
       iex> HelpfulOptions.parse_commands(["remote", "add", "origin"], definitions)
-      {:ok, ["remote", "add", "origin"], %{}, []}
+      {:ok, %HelpfulOptions.ParsedCommand{commands: ["remote", "add", "origin"], switches: %{}, other: []}}
 
   When both an exact and a placeholder definition could match, the exact one wins:
 
@@ -290,7 +291,7 @@ defmodule HelpfulOptions do
       iex>   %{commands: ["remote", :any], switches: [name: %{type: :string}]}
       iex> ]
       iex> HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
-      {:ok, ["remote", "add"], %{name: "origin"}, []}
+      {:ok, %HelpfulOptions.ParsedCommand{commands: ["remote", "add"], switches: %{name: "origin"}, other: []}}
 
   When no definitions match, the error indicates the unknown command:
 
@@ -318,7 +319,7 @@ defmodule HelpfulOptions do
       {:error, %HelpfulOptions.Errors{switches: %HelpfulOptions.SwitchErrors{incorrect: [{"--count", "abc"}]}}}
   """
   @spec parse_commands(argv, [HelpfulOptions.CommandDefinition.t()]) ::
-          {:ok, [String.t()], map, [String.t()]} | {:error, term}
+          {:ok, HelpfulOptions.ParsedCommand.t()} | {:error, term}
   def parse_commands(argv, definitions) do
     with {:ok, subcommands, rest} <- Subcommands.strip(argv),
          sorted = sort_definitions(definitions),
@@ -326,7 +327,7 @@ defmodule HelpfulOptions do
          {:ok, definition} <- find_definition(sorted, subcommands),
          options = [switches: definition[:switches], other: definition[:other]],
          {:ok, switches, other} <- parse(rest, options) do
-      {:ok, subcommands, switches, other}
+      {:ok, %ParsedCommand{commands: subcommands, switches: switches, other: other}}
     end
   end
 
@@ -353,7 +354,7 @@ defmodule HelpfulOptions do
       iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string}]}
       iex> ]
       iex> HelpfulOptions.parse_commands!(["remote", "add", "--name", "origin"], definitions)
-      {["remote", "add"], %{name: "origin"}, []}
+      %HelpfulOptions.ParsedCommand{commands: ["remote", "add"], switches: %{name: "origin"}, other: []}
 
       iex> definitions = [
       iex>   %{commands: ["remote"], switches: nil}
@@ -368,11 +369,11 @@ defmodule HelpfulOptions do
       iex> HelpfulOptions.parse_commands!(["remote"], definitions)
       ** (ArgumentError) duplicate commands: remote
   """
-  @spec parse_commands!(argv, [HelpfulOptions.CommandDefinition.t()]) :: {[String.t()], map, [String.t()]}
+  @spec parse_commands!(argv, [HelpfulOptions.CommandDefinition.t()]) :: HelpfulOptions.ParsedCommand.t()
   def parse_commands!(argv, definitions) do
     case parse_commands(argv, definitions) do
-      {:ok, commands, switches, other} ->
-        {commands, switches, other}
+      {:ok, parsed_command} ->
+        parsed_command
 
       {:error, {:unknown_command, commands}} ->
         raise ArgumentError, "unknown command: #{Enum.join(commands, " ")}"

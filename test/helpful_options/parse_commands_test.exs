@@ -7,7 +7,7 @@ defmodule HelpfulOptions.ParseCommandsTest do
         %{commands: [], switches: nil}
       ]
 
-      assert {:ok, [], %{}, []} =
+      assert {:ok, %HelpfulOptions.ParsedCommand{commands: [], switches: %{}, other: []}} =
                HelpfulOptions.parse_commands([], definitions)
     end
 
