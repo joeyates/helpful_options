@@ -249,13 +249,37 @@ defmodule HelpfulOptions do
       iex> HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
       {:ok, ["remote", "add"], %{name: "origin"}, []}
 
-  A root command (empty commands list):
+  A root command (empty commands list) works like `parse/2`:
 
       iex> definitions = [
       iex>   %{commands: [], switches: [verbose: %{type: :boolean}]}
       iex> ]
       iex> HelpfulOptions.parse_commands(["--verbose"], definitions)
       {:ok, [], %{verbose: true}, []}
+
+  An unknown command returns an error:
+
+      iex> definitions = [
+      iex>   %{commands: ["remote"], switches: nil}
+      iex> ]
+      iex> HelpfulOptions.parse_commands(["branch", "--verbose"], definitions)
+      {:error, {:unknown_command, ["branch"]}}
+
+  Returns 'other:' arguments as a list, and validates them according to the definition:
+
+      iex> definitions = [
+      iex>   %{commands: ["deploy"], switches: [env: %{type: :string}], other: 1}
+      iex> ]
+      iex> HelpfulOptions.parse_commands(["deploy", "--env", "prod", "myapp"], definitions)
+      {:ok, ["deploy"], %{env: "prod"}, ["myapp"]}
+
+  Returns `OtherErrors` when wrong number of other args is given:
+
+      iex> definitions = [
+      iex>   %{commands: ["deploy"], switches: nil, other: 2}
+      iex> ]
+      iex> HelpfulOptions.parse_commands(["deploy", "--", "one"], definitions)
+      {:error, %HelpfulOptions.Errors{other: %HelpfulOptions.OtherErrors{required: 2, actual: 1}}}
 
   A wildcard entry `:any` matches any single subcommand token at that position:
 
@@ -274,13 +298,13 @@ defmodule HelpfulOptions do
       iex> HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
       {:ok, ["remote", "add"], %{name: "origin"}, []}
 
-  Unknown command returns an error:
+  When no definitions match, the error indicates the unknown command:
 
       iex> definitions = [
-      iex>   %{commands: ["remote"], switches: nil}
+      iex>   %{commands: [:any, "add"], switches: [name: %{type: :string}], other: nil}
       iex> ]
-      iex> HelpfulOptions.parse_commands(["branch", "--verbose"], definitions)
-      {:error, {:unknown_command, ["branch"]}}
+      iex> HelpfulOptions.parse_commands(["remote", "remove", "--name", "origin"], definitions)
+      {:error, {:unknown_command, ["remote", "remove"]}}
 
   Duplicate command definitions return an error:
 
