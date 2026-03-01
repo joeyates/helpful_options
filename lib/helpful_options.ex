@@ -275,19 +275,19 @@ defmodule HelpfulOptions do
       iex> HelpfulOptions.parse_commands(["deploy", "--", "one"], definitions)
       {:error, %HelpfulOptions.Errors{other: %HelpfulOptions.OtherErrors{required: 2, actual: 1}}}
 
-  A wildcard entry `:any` matches any single subcommand token at that position:
+  An atom as a placeholder entry matches any text token at that position:
 
       iex> definitions = [
-      iex>   %{commands: [:any, "add"], switches: [name: %{type: :string}]}
+      iex>   %{commands: ["remote", "add", :source]}
       iex> ]
-      iex> HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
-      {:ok, ["remote", "add"], %{name: "origin"}, []}
+      iex> HelpfulOptions.parse_commands(["remote", "add", "origin"], definitions)
+      {:ok, ["remote", "add", "origin"], %{}, []}
 
-  When both an exact and a wildcard definition could match, the exact one wins:
+  When both an exact and a placeholder definition could match, the exact one wins:
 
       iex> definitions = [
       iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string}]},
-      iex>   %{commands: [:any, "add"], switches: [label: %{type: :string}]}
+      iex>   %{commands: ["remote", :any], switches: [name: %{type: :string}]}
       iex> ]
       iex> HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
       {:ok, ["remote", "add"], %{name: "origin"}, []}
@@ -295,7 +295,7 @@ defmodule HelpfulOptions do
   When no definitions match, the error indicates the unknown command:
 
       iex> definitions = [
-      iex>   %{commands: [:any, "add"], switches: [name: %{type: :string}], other: nil}
+      iex>   %{commands: [:foo, "add"], switches: [name: %{type: :string}], other: nil}
       iex> ]
       iex> HelpfulOptions.parse_commands(["remote", "remove", "--name", "origin"], definitions)
       {:error, {:unknown_command, ["remote", "remove"]}}
@@ -332,7 +332,7 @@ defmodule HelpfulOptions do
 
   defp sort_definitions(definitions) do
     Enum.sort_by(definitions, fn defn ->
-      first_any = Enum.find_index(defn.commands, &(&1 == :any)) || length(defn.commands)
+      first_any = Enum.find_index(defn.commands, &is_atom/1) || length(defn.commands)
       {-length(defn.commands), -first_any}
     end)
   end
@@ -455,21 +455,21 @@ defmodule HelpfulOptions do
         "  --name=NAME                  Remote name"
       }
 
-  A wildcard `:any` in the command path renders as `<command>`:
+  A placeholder atom in the command path is rendered as `<placeholder>`:
 
       iex> HelpfulOptions.help_commands("my_program", [
-      iex>   %{commands: ["remote", :any], switches: [name: %{type: :string, description: "Remote name"}]}
+      iex>   %{commands: ["remote", :source], switches: [name: %{type: :string, description: "Remote name"}]}
       iex> ])
       {
         :ok,
-        "my_program remote <command>\n" <>
+        "my_program remote <source>\n" <>
         "-h, --help                     Show a help message\n" <>
         "-q, --quiet                    Suppress output\n" <>
         "-v, --verbose                  Increase verbosity\n" <>
         "  --name=NAME                  Remote name"
       }
 
-  A root command (`commands: []`) is rendered without a subcommand prefix line:
+  A root command (`commands: []`) is rendered with just the program name:
 
       iex> HelpfulOptions.help_commands("my_program", [
       iex>   %{commands: [], switches: [debug: %{type: :boolean, description: "Enable debug mode"}]}
@@ -531,7 +531,7 @@ defmodule HelpfulOptions do
     heading =
       commands
       |> Enum.map(fn
-        :any -> "<command>"
+        placeholder when is_atom(placeholder) -> "<#{placeholder}>"
         cmd -> cmd
       end)
       |> Enum.join(" ")
@@ -546,7 +546,7 @@ defmodule HelpfulOptions do
       patterns
       |> Enum.zip(commands)
       |> Enum.all?(fn
-        {:any, _} -> true
+        {p, _c} when is_atom(p) -> true
         {p, c} -> p == c
       end)
   end
