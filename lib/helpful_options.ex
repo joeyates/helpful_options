@@ -413,7 +413,7 @@ defmodule HelpfulOptions do
     help
   end
 
-  @spec help_commands([HelpfulOptions.CommandDefinition.t()]) :: {:ok, String.t()} | {:error, term}
+  @spec help_commands(String.t(), [HelpfulOptions.CommandDefinition.t()]) :: {:ok, String.t()} | {:error, term}
   @doc ~S"""
   Generates formatted help text from a list of command definitions.
 
@@ -422,12 +422,12 @@ defmodule HelpfulOptions do
 
   A single command with switches:
 
-      iex> HelpfulOptions.help_commands([
+      iex> HelpfulOptions.help_commands("my_program", [
       iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string, description: "Remote name"}]}
       iex> ])
       {
         :ok,
-        "remote add\n" <>
+        "my_program remote add\n" <>
         "-h, --help                     Show a help message\n" <>
         "-q, --quiet                    Suppress output\n" <>
         "-v, --verbose                  Increase verbosity\n" <>
@@ -436,19 +436,19 @@ defmodule HelpfulOptions do
 
   Multiple commands:
 
-      iex> HelpfulOptions.help_commands([
+      iex> HelpfulOptions.help_commands("my_program", [
       iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string, description: "Remote name"}]},
       iex>   %{commands: ["remote", "remove"], switches: [name: %{type: :string, description: "Remote name"}]}
       iex> ])
       {
         :ok,
-        "remote add\n" <>
+        "my_program remote add\n" <>
         "-h, --help                     Show a help message\n" <>
         "-q, --quiet                    Suppress output\n" <>
         "-v, --verbose                  Increase verbosity\n" <>
         "  --name=NAME                  Remote name\n" <>
         "\n" <>
-        "remote remove\n" <>
+        "my_program remote remove\n" <>
         "-h, --help                     Show a help message\n" <>
         "-q, --quiet                    Suppress output\n" <>
         "-v, --verbose                  Increase verbosity\n" <>
@@ -457,12 +457,12 @@ defmodule HelpfulOptions do
 
   A wildcard `:any` in the command path renders as `<command>`:
 
-      iex> HelpfulOptions.help_commands([
+      iex> HelpfulOptions.help_commands("my_program", [
       iex>   %{commands: ["remote", :any], switches: [name: %{type: :string, description: "Remote name"}]}
       iex> ])
       {
         :ok,
-        "remote <command>\n" <>
+        "my_program remote <command>\n" <>
         "-h, --help                     Show a help message\n" <>
         "-q, --quiet                    Suppress output\n" <>
         "-v, --verbose                  Increase verbosity\n" <>
@@ -471,24 +471,25 @@ defmodule HelpfulOptions do
 
   A root command (`commands: []`) is rendered without a subcommand prefix line:
 
-      iex> HelpfulOptions.help_commands([
+      iex> HelpfulOptions.help_commands("my_program", [
       iex>   %{commands: [], switches: [debug: %{type: :boolean, description: "Enable debug mode"}]}
       iex> ])
       {
         :ok,
+        "my_program\n" <>
         "-h, --help                     Show a help message\n" <>
         "-q, --quiet                    Suppress output\n" <>
         "-v, --verbose                  Increase verbosity\n" <>
         "  --debug                      Enable debug mode"
       }
   """
-  def help_commands(definitions) do
+  def help_commands(program, definitions) do
     result =
       definitions
       |> Enum.reduce_while([], fn definition, acc ->
         case Switches.help(definition[:switches]) do
           {:ok, switches_help} ->
-            section = format_command_section(definition[:commands], switches_help)
+            section = format_command_section(program, definition[:commands], switches_help)
             {:cont, [section | acc]}
 
           {:error, _} = error ->
@@ -502,29 +503,31 @@ defmodule HelpfulOptions do
     end
   end
 
-  @spec help_commands!([HelpfulOptions.CommandDefinition.t()]) :: String.t()
+  @spec help_commands!(String.t(), [HelpfulOptions.CommandDefinition.t()]) :: String.t()
   @doc ~S"""
-  Bang variant of `help_commands/1` that returns the help string directly or raises `ArgumentError`.
+  Bang variant of `help_commands/2` that returns the help string directly or raises `ArgumentError`.
 
-      iex> HelpfulOptions.help_commands!([
+      iex> HelpfulOptions.help_commands!("my_program", [
       iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string, description: "Remote name"}]}
       iex> ])
-      "remote add\n" <>
+      "my_program remote add\n" <>
       "-h, --help                     Show a help message\n" <>
       "-q, --quiet                    Suppress output\n" <>
       "-v, --verbose                  Increase verbosity\n" <>
       "  --name=NAME                  Remote name"
   """
-  def help_commands!(definitions) do
-    case help_commands(definitions) do
+  def help_commands!(program, definitions) do
+    case help_commands(program, definitions) do
       {:ok, help} -> help
       {:error, errors} -> raise ArgumentError, to_string(errors)
     end
   end
 
-  defp format_command_section([], switches_help), do: switches_help
+  defp format_command_section(program, [], switches_help) do
+    "#{program}\n#{switches_help}"
+  end
 
-  defp format_command_section(commands, switches_help) do
+  defp format_command_section(program, commands, switches_help) do
     heading =
       commands
       |> Enum.map(fn
@@ -533,7 +536,7 @@ defmodule HelpfulOptions do
       end)
       |> Enum.join(" ")
 
-    "#{heading}\n#{switches_help}"
+    "#{program} #{heading}\n#{switches_help}"
   end
 
   defp options_map(options), do: {:ok, Enum.into(options, %{})}
