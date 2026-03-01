@@ -3,7 +3,7 @@ defmodule HelpfulOptions.ParsedCommand do
   Struct representing a parsed command from command-line arguments.
   """
 
-  defstruct commands: [], switches: %{}, other: [] 
+  defstruct commands: [], switches: %{}, other: []
 
   @type t :: %__MODULE__{
           commands: [String.t() | atom()],

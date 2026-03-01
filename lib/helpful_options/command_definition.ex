@@ -4,6 +4,7 @@ defmodule HelpfulOptions.CommandDefinition do
   """
 
   @type t :: %{
+          description: String.t() | nil,
           commands: [String.t() | :any],
           switches: Switches.t(),
           other: Other.t()
