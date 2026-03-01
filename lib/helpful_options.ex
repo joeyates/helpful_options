@@ -223,12 +223,6 @@ defmodule HelpfulOptions do
     end
   end
 
-  @type command_definition :: %{
-          commands: [String.t() | :any],
-          switches: Switches.t(),
-          other: Other.t()
-        }
-
   @doc ~S"""
   Parses command-line arguments against a list of command definitions.
 
@@ -323,7 +317,7 @@ defmodule HelpfulOptions do
       iex> HelpfulOptions.parse_commands(["run", "--count", "abc"], definitions)
       {:error, %HelpfulOptions.Errors{switches: %HelpfulOptions.SwitchErrors{incorrect: [{"--count", "abc"}]}}}
   """
-  @spec parse_commands(argv, [command_definition]) ::
+  @spec parse_commands(argv, [HelpfulOptions.CommandDefinition.t()]) ::
           {:ok, [String.t()], map, [String.t()]} | {:error, term}
   def parse_commands(argv, definitions) do
     with {:ok, subcommands, rest} <- Subcommands.strip(argv),
@@ -374,7 +368,7 @@ defmodule HelpfulOptions do
       iex> HelpfulOptions.parse_commands!(["remote"], definitions)
       ** (ArgumentError) duplicate commands: remote
   """
-  @spec parse_commands!(argv, [command_definition]) :: {[String.t()], map, [String.t()]}
+  @spec parse_commands!(argv, [HelpfulOptions.CommandDefinition.t()]) :: {[String.t()], map, [String.t()]}
   def parse_commands!(argv, definitions) do
     case parse_commands(argv, definitions) do
       {:ok, commands, switches, other} ->
