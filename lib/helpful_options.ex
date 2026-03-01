@@ -93,12 +93,12 @@ defmodule HelpfulOptions do
       iex> HelpfulOptions.parse(["--bar", "hi"], switches: [bar: %{type: :float}])
       {:error, %HelpfulOptions.Errors{switches: %HelpfulOptions.SwitchErrors{incorrect: [{"--bar", "hi"}]}}}
 
-  If you want to accept any supplied switches, use `:any`:
+  If you want to accept any supplied switches, use `switches: :any`:
 
       iex> HelpfulOptions.parse(["--param", "value"], switches: :any)
       {:ok, %{param: "value"}, []}
 
-    Note: using `:any` will not work for switches that do not exist as atoms.
+    Note: using `switches: :any` will not work for switches that do not exist as atoms.
     [HelpfulOptions will not create new atoms for you](https://hexdocs.pm/elixir/OptionParser.html#parse/2-parsing-unknown-switches).
 
     You can specify a shortened name for a switch:
@@ -243,8 +243,8 @@ defmodule HelpfulOptions do
   A simple command with switches:
 
       iex> definitions = [
-      iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string}], other: nil},
-      iex>   %{commands: ["remote"], switches: [verbose: %{type: :boolean}], other: nil}
+      iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string}]},
+      iex>   %{commands: ["remote"], switches: [verbose: %{type: :boolean}]}
       iex> ]
       iex> HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
       {:ok, ["remote", "add"], %{name: "origin"}, []}
@@ -252,7 +252,7 @@ defmodule HelpfulOptions do
   A root command (empty commands list):
 
       iex> definitions = [
-      iex>   %{commands: [], switches: [verbose: %{type: :boolean}], other: :any}
+      iex>   %{commands: [], switches: [verbose: %{type: :boolean}]}
       iex> ]
       iex> HelpfulOptions.parse_commands(["--verbose"], definitions)
       {:ok, [], %{verbose: true}, []}
@@ -260,7 +260,7 @@ defmodule HelpfulOptions do
   A wildcard entry `:any` matches any single subcommand token at that position:
 
       iex> definitions = [
-      iex>   %{commands: [:any, "add"], switches: [name: %{type: :string}], other: nil}
+      iex>   %{commands: [:any, "add"], switches: [name: %{type: :string}]}
       iex> ]
       iex> HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
       {:ok, [:any, "add"], %{name: "origin"}, []}
@@ -268,8 +268,8 @@ defmodule HelpfulOptions do
   When both an exact and a wildcard definition could match, the exact one wins:
 
       iex> definitions = [
-      iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string}], other: nil},
-      iex>   %{commands: [:any, "add"], switches: [label: %{type: :string}], other: nil}
+      iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string}]},
+      iex>   %{commands: [:any, "add"], switches: [label: %{type: :string}]}
       iex> ]
       iex> HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
       {:ok, ["remote", "add"], %{name: "origin"}, []}
@@ -277,7 +277,7 @@ defmodule HelpfulOptions do
   Unknown command returns an error:
 
       iex> definitions = [
-      iex>   %{commands: ["remote"], switches: nil, other: nil}
+      iex>   %{commands: ["remote"], switches: nil}
       iex> ]
       iex> HelpfulOptions.parse_commands(["branch", "--verbose"], definitions)
       {:error, {:unknown_command, ["branch"]}}
@@ -285,8 +285,8 @@ defmodule HelpfulOptions do
   Duplicate command definitions return an error:
 
       iex> definitions = [
-      iex>   %{commands: ["remote"], switches: nil, other: nil},
-      iex>   %{commands: ["remote"], switches: [verbose: %{type: :boolean}], other: nil}
+      iex>   %{commands: ["remote"], switches: nil},
+      iex>   %{commands: ["remote"], switches: [verbose: %{type: :boolean}]}
       iex> ]
       iex> HelpfulOptions.parse_commands(["remote"], definitions)
       {:error, {:duplicate_commands, ["remote"]}}
@@ -294,7 +294,7 @@ defmodule HelpfulOptions do
   Parse errors are returned as-is:
 
       iex> definitions = [
-      iex>   %{commands: ["run"], switches: [count: %{type: :integer}], other: nil}
+      iex>   %{commands: ["run"], switches: [count: %{type: :integer}]}
       iex> ]
       iex> HelpfulOptions.parse_commands(["run", "--count", "abc"], definitions)
       {:error, %HelpfulOptions.Errors{switches: %HelpfulOptions.SwitchErrors{incorrect: [{"--count", "abc"}]}}}
@@ -333,20 +333,20 @@ defmodule HelpfulOptions do
   Bang variant of `parse_commands/2` that raises on error.
 
       iex> definitions = [
-      iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string}], other: nil}
+      iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string}]}
       iex> ]
       iex> HelpfulOptions.parse_commands!(["remote", "add", "--name", "origin"], definitions)
       {["remote", "add"], %{name: "origin"}, []}
 
       iex> definitions = [
-      iex>   %{commands: ["remote"], switches: nil, other: nil}
+      iex>   %{commands: ["remote"], switches: nil}
       iex> ]
       iex> HelpfulOptions.parse_commands!(["branch"], definitions)
       ** (ArgumentError) unknown command: branch
 
       iex> definitions = [
-      iex>   %{commands: ["remote"], switches: nil, other: nil},
-      iex>   %{commands: ["remote"], switches: nil, other: nil}
+      iex>   %{commands: ["remote"], switches: nil},
+      iex>   %{commands: ["remote"], switches: nil}
       iex> ]
       iex> HelpfulOptions.parse_commands!(["remote"], definitions)
       ** (ArgumentError) duplicate commands: remote
