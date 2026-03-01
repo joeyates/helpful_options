@@ -123,3 +123,28 @@ Allow individual elements in a command definition's `commands` list to be the at
   - `[:any]` matching a single arbitrary command
   - `[:any, "add"]` matching `["remote", "add"]` but not `["remote", "remove"]`
   - Specificity: a definition with an exact string should be preferred over `:any` when both match (sort exact matches above wildcard matches)
+
+---
+
+# Add `help_commands/1` for `parse_commands/2` Definitions
+
+Status: [ ]
+
+## Description
+
+Add a `help_commands/1` function (and a bang variant `help_commands!/1`) that generates help text from a list of command definitions — the same format accepted by `parse_commands/2`. The output should list each subcommand with its switches, formatted consistently with the existing `help/1` output.
+
+## Technical Specifics
+
+- Add `HelpfulOptions.help_commands/1` with signature:
+  ```elixir
+  help_commands(definitions :: [CommandDefinition.t()]) :: {:ok, String.t()}
+  ```
+- For each definition, render the subcommand path (e.g. `"remote add"`) as a heading/prefix, then list its switches using the existing `Switches.help/1` logic.
+- Add `help_commands!/1` bang variant.
+- Definitions with `commands: []` (the root command) should be rendered without a subcommand prefix.
+- `:any` wildcards in command paths should be rendered as a placeholder, e.g. `<command>`.
+- Add doctests to `HelpfulOptions` covering at least:
+  - A single command with switches
+  - Multiple commands producing a multi-section output
+  - A root (`commands: []`) command definition
