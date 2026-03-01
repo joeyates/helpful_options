@@ -302,30 +302,29 @@ defmodule HelpfulOptions do
   @spec parse_commands(argv, [command_definition]) ::
           {:ok, [String.t()], map, [String.t()]} | {:error, term}
   def parse_commands(argv, definitions) do
-    {:ok, subcommands, rest} = Subcommands.strip(argv)
+    with {:ok, subcommands, rest} <- Subcommands.strip(argv),
+      sorted = sort_definitions(definitions),
+      :ok <- check_duplicate_commands(sorted),
+      {:ok, definition} <- find_definition(sorted, subcommands),
+      options = [switches: definition[:switches], other: definition[:other]],
+      {:ok, switches, other} <- parse(rest, options) do
+        {:ok, definition.commands, switches, other}
+    end
+  end
 
-    sorted =
-      Enum.sort_by(definitions, fn defn ->
-        first_any = Enum.find_index(defn.commands, &(&1 == :any)) || length(defn.commands)
-        {-length(defn.commands), -first_any}
-      end)
+  defp sort_definitions(definitions) do
+    Enum.sort_by(definitions, fn defn ->
+      first_any = Enum.find_index(defn.commands, &(&1 == :any)) || length(defn.commands)
+      {-length(defn.commands), -first_any}
+    end)
+  end
 
-    with :ok <- check_duplicate_commands(sorted) do
-      case Enum.find(sorted, fn defn -> commands_match?(defn.commands, subcommands) end) do
-        nil ->
-          {:error, {:unknown_command, subcommands}}
-
-        matched ->
-          options = [
-            switches: matched[:switches],
-            other: matched[:other]
-          ]
-
-          case parse(rest, options) do
-            {:ok, switches, other} -> {:ok, matched.commands, switches, other}
-            {:error, _} = error -> error
-          end
-      end
+  defp find_definition(definitions, subcommands) do
+    definitions
+    |> Enum.find(fn definition -> commands_match?(definition.commands, subcommands) end)
+    |> case do
+      nil -> {:error, {:unknown_command, subcommands}}
+      definition -> {:ok, definition}
     end
   end
 
