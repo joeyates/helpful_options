@@ -128,7 +128,7 @@ Allow individual elements in a command definition's `commands` list to be the at
 
 # Add `help_commands/1` for `parse_commands/2` Definitions
 
-Status: [ ]
+Status: [x]
 
 ## Description
 
