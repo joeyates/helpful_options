@@ -9,10 +9,10 @@ defmodule HelpfulOptions.Other do
 
   @type t :: other_options | :any | nil
   @type other_options ::
-    %{min: non_neg_integer, max: non_neg_integer} |
-    %{min: non_neg_integer} |
-    %{max: non_neg_integer} |
-    non_neg_integer()
+          %{min: non_neg_integer, max: non_neg_integer}
+          | %{min: non_neg_integer}
+          | %{max: non_neg_integer}
+          | non_neg_integer()
 
   @spec check([String.t()], t()) :: {:ok} | {:error, HelpfulOptions.Errors.t()}
   @doc ~S"""

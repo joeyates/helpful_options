@@ -224,10 +224,10 @@ defmodule HelpfulOptions do
   end
 
   @type command_definition :: %{
-    commands: [String.t() | :any],
-    switches: Switches.t(),
-    other: Other.t()
-  }
+          commands: [String.t() | :any],
+          switches: Switches.t(),
+          other: Other.t()
+        }
 
   @doc ~S"""
   Parses command-line arguments against a list of command definitions.
@@ -327,12 +327,12 @@ defmodule HelpfulOptions do
           {:ok, [String.t()], map, [String.t()]} | {:error, term}
   def parse_commands(argv, definitions) do
     with {:ok, subcommands, rest} <- Subcommands.strip(argv),
-      sorted = sort_definitions(definitions),
-      :ok <- check_duplicate_commands(sorted),
-      {:ok, definition} <- find_definition(sorted, subcommands),
-      options = [switches: definition[:switches], other: definition[:other]],
-      {:ok, switches, other} <- parse(rest, options) do
-        {:ok, subcommands, switches, other}
+         sorted = sort_definitions(definitions),
+         :ok <- check_duplicate_commands(sorted),
+         {:ok, definition} <- find_definition(sorted, subcommands),
+         options = [switches: definition[:switches], other: definition[:other]],
+         {:ok, switches, other} <- parse(rest, options) do
+      {:ok, subcommands, switches, other}
     end
   end
 

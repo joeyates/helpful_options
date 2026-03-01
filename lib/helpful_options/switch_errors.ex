@@ -47,7 +47,7 @@ defmodule HelpfulOptions.SwitchErrors do
 
     def to_string(%SwitchErrors{unknown: unknown}) when is_list(unknown) do
       unknown
-      |> Enum.map(& "#{&1} - unknown switch")
+      |> Enum.map(&"#{&1} - unknown switch")
       |> Enum.join(", ")
     end
 

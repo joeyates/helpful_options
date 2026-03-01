@@ -12,14 +12,9 @@ defmodule HelpfulOptions.Logging do
 
     level =
       cond do
-        quiet ->
-          0
-
-        verbose ->
-          2
-
-        true ->
-          1
+        quiet -> 0
+        verbose -> 2
+        true -> 1
       end
 
     level_atom =
