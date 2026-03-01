@@ -15,8 +15,8 @@ branch: feature/add-help-commands
 - [x] Render `commands: []` (root command) without a subcommand prefix
 - [x] Add `HelpfulOptions.help_commands!/1` bang variant
 - [x] Add doctests covering: a single command with switches, multiple commands, and a root (`commands: []`) definition
-- [ ] Address any additional implementation details that arise during development
-- [ ] Mark the plan as "done"
+- [x] Address any additional implementation details that arise during development
+- [x] Mark the plan as "done"
 
 ## Principal Files
 
