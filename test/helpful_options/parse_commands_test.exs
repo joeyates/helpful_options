@@ -43,7 +43,7 @@ defmodule HelpfulOptions.ParseCommandsTest do
         %{commands: [:any], switches: [verbose: %{type: :boolean}], other: nil}
       ]
 
-      assert {:ok, [:any], %{verbose: true}, []} =
+      assert {:ok, ["something"], %{verbose: true}, []} =
                HelpfulOptions.parse_commands(["something", "--verbose"], definitions)
     end
 
@@ -52,7 +52,7 @@ defmodule HelpfulOptions.ParseCommandsTest do
         %{commands: [:any, "add"], switches: [name: %{type: :string}], other: nil}
       ]
 
-      assert {:ok, [:any, "add"], %{name: "origin"}, []} =
+      assert {:ok, ["remote", "add"], %{name: "origin"}, []} =
                HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
     end
 

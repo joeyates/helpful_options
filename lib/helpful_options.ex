@@ -263,7 +263,7 @@ defmodule HelpfulOptions do
       iex>   %{commands: [:any, "add"], switches: [name: %{type: :string}]}
       iex> ]
       iex> HelpfulOptions.parse_commands(["remote", "add", "--name", "origin"], definitions)
-      {:ok, [:any, "add"], %{name: "origin"}, []}
+      {:ok, ["remote", "add"], %{name: "origin"}, []}
 
   When both an exact and a wildcard definition could match, the exact one wins:
 
@@ -308,7 +308,7 @@ defmodule HelpfulOptions do
       {:ok, definition} <- find_definition(sorted, subcommands),
       options = [switches: definition[:switches], other: definition[:other]],
       {:ok, switches, other} <- parse(rest, options) do
-        {:ok, definition.commands, switches, other}
+        {:ok, subcommands, switches, other}
     end
   end
 
