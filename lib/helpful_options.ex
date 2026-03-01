@@ -502,6 +502,26 @@ defmodule HelpfulOptions do
     end
   end
 
+  @spec help_commands!([HelpfulOptions.CommandDefinition.t()]) :: String.t()
+  @doc ~S"""
+  Bang variant of `help_commands/1` that returns the help string directly or raises `ArgumentError`.
+
+      iex> HelpfulOptions.help_commands!([
+      iex>   %{commands: ["remote", "add"], switches: [name: %{type: :string, description: "Remote name"}]}
+      iex> ])
+      "remote add\n" <>
+      "-h, --help                     Show a help message\n" <>
+      "-q, --quiet                    Suppress output\n" <>
+      "-v, --verbose                  Increase verbosity\n" <>
+      "  --name=NAME                  Remote name"
+  """
+  def help_commands!(definitions) do
+    case help_commands(definitions) do
+      {:ok, help} -> help
+      {:error, errors} -> raise ArgumentError, to_string(errors)
+    end
+  end
+
   defp format_command_section([], switches_help), do: switches_help
 
   defp format_command_section(commands, switches_help) do
