@@ -7,7 +7,7 @@ defmodule HelpfulOptions.Logging do
 
   @spec apply(map()) :: {:ok}
   def apply(switches) do
-    verbose = Map.get(switches, :verbose, 0)
+    verbose = Map.get(switches, :verbose, false)
     quiet = Map.get(switches, :quiet, false)
 
     level =
