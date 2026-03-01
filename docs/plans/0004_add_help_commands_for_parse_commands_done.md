@@ -10,13 +10,13 @@ branch: feature/add-help-commands
 
 ## Tasks
 
-- [ ] Add `HelpfulOptions.help_commands/1` — iterate definitions, format each as a subcommand heading + switch list via `Switches.help/1`
-- [ ] Render `:any` wildcards in command paths as `<command>`
-- [ ] Render `commands: []` (root command) without a subcommand prefix
-- [ ] Add `HelpfulOptions.help_commands!/1` bang variant
-- [ ] Add doctests covering: a single command with switches, multiple commands, and a root (`commands: []`) definition
-- [ ] Address any additional implementation details that arise during development
-- [ ] Mark the plan as "done"
+- [x] Add `HelpfulOptions.help_commands/1` — iterate definitions, format each as a subcommand heading + switch list via `Switches.help/1`
+- [x] Render `:any` wildcards in command paths as `<command>`
+- [x] Render `commands: []` (root command) without a subcommand prefix
+- [x] Add `HelpfulOptions.help_commands!/1` bang variant
+- [x] Add doctests covering: a single command with switches, multiple commands, and a root (`commands: []`) definition
+- [x] Address any additional implementation details that arise during development
+- [x] Mark the plan as "done"
 
 ## Principal Files
 
