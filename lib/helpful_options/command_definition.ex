@@ -4,9 +4,9 @@ defmodule HelpfulOptions.CommandDefinition do
   """
 
   @type t :: %{
-          description: String.t() | nil,
-          commands: [String.t() | :any],
-          switches: Switches.t(),
-          other: Other.t()
+          :description => String.t() | nil,
+          :commands => [String.t() | :any | atom()],
+          optional(:switches) => Switches.t(),
+          optional(:other) => Other.t()
         }
 end

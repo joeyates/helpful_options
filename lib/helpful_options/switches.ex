@@ -14,13 +14,13 @@ defmodule HelpfulOptions.Switches do
     verbose: %{type: :boolean, short: :v, description: "Increase verbosity"}
   ]
 
-  @type t :: [{atom, switch}] | :any | nil
+  @type t :: [{atom, switch}] | :any
   @type switch :: %{
-          required(:type) => switch_type,
-          short: String.t() | atom,
-          description: String.t(),
-          required: boolean,
-          default: term
+          :type => switch_type,
+          optional(:short) => String.t() | atom,
+          optional(:description) => String.t(),
+          optional(:required) => boolean,
+          optional(:default) => term
         }
   @type switch_type ::
           :boolean | :count | :float | :floats | :integer | :integers | :string | :strings
